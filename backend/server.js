@@ -4,6 +4,8 @@ const dotenv = require('dotenv');
 const authRoutes = require('./routes/authRoutes'); 
 const connectDB = require('./config/db');
 const cors = require('cors');
+const investmentRoutes = require('./routes/investmentRoutes'); // Import investment routes
+
 
 // Connect to Database
 connectDB();
@@ -20,6 +22,7 @@ app.use(express.json()); // Allow the server to accept JSON data in request bodi
 
 // --- API Routes ---
 app.use('/api/auth', authRoutes); // Mount the authentication routes
+app.use('/api/investments', investmentRoutes); // Mount investment routes
 
 // Basic test route
 app.get('/', (req, res) => {
