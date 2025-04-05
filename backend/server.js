@@ -14,12 +14,12 @@ dotenv.config();
 // Initialize Express app
 const app = express();
 
-// --- API Routes ---
-app.use('/api/auth', authRoutes); // Mount the authentication routes
-
 // Middleware
 app.use(cors()); // Enable CORS for all origins (adjust later for security)
 app.use(express.json()); // Allow the server to accept JSON data in request bodies
+
+// --- API Routes ---
+app.use('/api/auth', authRoutes); // Mount the authentication routes
 
 // Basic test route
 app.get('/', (req, res) => {
