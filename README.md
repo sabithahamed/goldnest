@@ -22,9 +22,9 @@ GoldNest is a revolutionary web-based micro-investment platform that enables Sri
 
 | Name      | Role              | Email                    |
 |-----------|-------------------|--------------------------|
-| M J S Ahamed (Izzath) | Frontend Developer  | izzath@example.com      |
-| Sabith Jiffrey         | Backend Developer   | sabithjiffrey@gmail.com |
-| Rahim                  | Database Integration | rahim@example.com       |
+| Izzath Nisfer | Frontend Developer  | izzathnisfer@gmail.com      |
+| Sabith Jiffrey (Leader)        | Backend Developer   | sabithjiffrey@gmail.com |
+| Rahim Iqbal                 | Database Integration | rahim@example.com       |
 
 ---
 
