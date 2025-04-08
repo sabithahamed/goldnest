@@ -8,7 +8,7 @@ GoldNest is a revolutionary web-based micro-investment platform that enables Sri
 
 ## 🚀 Live Demo
 
-👉 [Access the Live Web App](https://your-deployed-site-url.com)
+👉 [Access the Live Web App](https://goldnest.pages.dev/)
 
 ---
 
@@ -22,9 +22,9 @@ GoldNest is a revolutionary web-based micro-investment platform that enables Sri
 
 | Name      | Role              | Email                    |
 |-----------|-------------------|--------------------------|
-| Izzath Nisfer | Frontend Developer  | izzathnisfer@gmail.com      |
-| Sabith Jiffrey (Leader)        | Backend Developer   | sabithjiffrey@gmail.com |
-| Rahim Iqbal                 | Database Integration | rahim@example.com       |
+| Izzath Nisfer | Backend Developer  | izzathnisfer@gmail.com      |
+| Sabith Jiffrey (Leader)        | Frontend Developer   | sabithjiffrey@gmail.com |
+| Rahim Iqbal                 | Frontend Developer | mirahim2003@gmail.com       |
 
 ---
 
