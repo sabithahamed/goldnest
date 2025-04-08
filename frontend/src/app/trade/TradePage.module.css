@@ -1,0 +1,393 @@
+/* src/app/trade/TradePage.module.css */
+
+/* --- Base Trade Page Styles --- */
+.trade {
+    padding: 15px 5%;
+    min-height: calc(100vh - 56px); /* Adjust if navbar height differs */
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 900px; /* Constrain width */
+    margin: 0 auto; /* Center content */
+}
+
+/* --- Card Styles (Generic card used on this page) --- */
+.card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 15px;
+    width: 100%;
+    /* max-width: 900px; */ /* Moved to .trade container */
+    /* margin: 0 auto; */   /* Moved to .trade container */
+}
+
+.card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+
+.walletBalanceContent {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.balanceLeft, .balanceRight {
+    flex: 1;
+    min-width: 200px;
+}
+
+.balanceHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.iconCircle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #F8B612;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.balanceIcon { /* For Font Awesome icon */
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.goldIcon { /* For Image component */
+    width: 16px;
+    height: 16px;
+    display: block; /* Good practice for images */
+}
+
+.balanceHeader p {
+    font-size: 0.8rem;
+    color: #666;
+    margin: 0; /* Reset margin if needed */
+}
+
+.walletBalance h2 { /* Target h2 specifically within walletBalance card */
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin: 8px 0;
+}
+
+.highlight {
+    font-size: 0.8rem;
+    /* Color handled by .positive/.negative */
+    margin: 4px 0;
+}
+
+.recentActivity {
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.divider {
+    width: 1px;
+    height: 80px;
+    background-color: #ddd;
+    margin: 0 10px; /* Add some margin */
+}
+
+/* --- Trade Form Styles --- */
+.tradeForm {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.tradeToggle {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.tradeToggle label {
+    font-size: 0.9rem;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.tradeToggle input[type="radio"] {
+    accent-color: #F8B612;
+    cursor: pointer;
+}
+
+
+.formGroup { /* If you use this class for structure */
+    margin-bottom: 12px;
+}
+
+/* Targeting the specific input field if needed, or use utility classes */
+.inputField { /* Apply this class to the input if you want specific module styles */
+    width: 100%;
+    max-width: 300px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    color: #333;
+    display: block; /* Make it block */
+    margin: 0 auto 8px; /* Center and add margin below */
+}
+
+.amountOptions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center; /* Center buttons */
+}
+
+.amountOptions button {
+    background-color: #f9f9f9;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 15px;
+    border: 1px solid #ddd;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.amountOptions button:hover {
+    background-color: #e7e7e7;
+}
+
+/* Payment Methods Section */
+.paymentMethods {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.paymentMethods h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.paymentMethods label {
+    font-size: 0.8rem;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.paymentMethods input[type="radio"] {
+     cursor: pointer;
+}
+
+.paymentMethods img { /* Style for payment logos if used */
+    height: 20px;
+}
+
+/* Trade Summary Section */
+.tradeSummary {
+    background-color: #f9f9f9;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.tradeSummary p {
+    font-size: 0.8rem;
+    color: #333;
+    margin: 4px 0;
+}
+
+/* Action Button Styles (assuming redeemAction is the container) */
+.redeemAction {
+    display: flex; /* Use flex to easily center the button */
+    justify-content: center;
+    margin-top: 1rem; /* Equivalent to mt-4 */
+}
+
+/* --- Button Styles (Keep if specific to this page or not globally defined) --- */
+/* Add .btnPrimary, .btnSecondary if they aren't global */
+.btnPrimary {
+    background-color: #F8B612;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 500; /* Added for consistency */
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-align: center; /* Ensure text is centered */
+    text-decoration: none; /* Remove underline if used as link */
+    display: inline-block; /* Behave like a button */
+}
+
+.btnPrimary:hover {
+    background-color: #e0a00e;
+}
+
+.btnPrimary:disabled {
+    background-color: #f8d074; /* Lighter shade when disabled */
+    cursor: not-allowed;
+}
+
+/* Example for btnSecondary if needed */
+.btnSecondary {
+    background-color: #e7e7e7;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.8rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.btnSecondary:hover {
+    background-color: #d5d5d5;
+}
+
+/* --- Utility Styles --- */
+.positive {
+    color: #28a745;
+}
+
+.negative {
+    color: #dc3545;
+}
+
+.error { /* Style for error messages */
+    color: #dc3545;
+    font-size: 0.85rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+
+/* --- Success Popup Styles --- */
+.successPopup {
+    /* display: none; Replaced by conditional rendering */
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 20px 30px; /* More padding */
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    z-index: 1050; /* Ensure it's above navbar */
+    width: 90%;
+    max-width: 350px;
+    border: 1px solid #eee;
+}
+
+.successPopup h3 {
+    font-size: 1.2rem;
+    color: #28a745;
+    margin-top: 0; /* Remove default margin */
+    margin-bottom: 15px;
+}
+
+.successPopup p {
+    font-size: 0.9rem;
+    color: #333;
+    margin: 8px 0;
+}
+
+.successPopup button { /* Target button inside popup */
+     margin-top: 15px;
+     /* width: 100%; */ /* Removed to let button size naturally */
+     /* max-width: 150px; */ /* Removed */
+     padding: 8px 25px; /* Adjust padding */
+}
+
+
+/* --- Responsive Adjustments for Trade Page Content --- */
+@media (max-width: 768px) {
+    .trade {
+        padding: 10px 3%;
+    }
+
+    /* Adjust layout inside wallet balance card */
+    .walletBalanceContent {
+        flex-direction: column;
+        align-items: stretch; /* Stretch items to full width */
+        gap: 15px;
+    }
+    .balanceLeft, .balanceRight {
+       min-width: unset; /* Remove min-width */
+       text-align: center; /* Center text on mobile */
+    }
+     .balanceHeader {
+        justify-content: center; /* Center header items */
+    }
+    .walletBalance h2 {
+        font-size: 1.3rem; /* Slightly smaller */
+    }
+    .divider {
+        display: none; /* Hide divider on mobile */
+    }
+
+    /* Adjust trade form */
+    .tradeToggle {
+        flex-direction: column; /* Stack radio buttons */
+        gap: 12px;
+        align-items: flex-start; /* Align radios left */
+        margin-left: auto; /* Push to center-ish */
+        margin-right: auto;
+        max-width: 200px; /* Limit width */
+    }
+
+    .amountOptions {
+        justify-content: center; /* Keep buttons centered */
+    }
+
+    .inputField {
+        max-width: 100%; /* Allow full width */
+    }
+
+    .paymentMethods {
+        align-items: flex-start; /* Align labels left */
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 300px; /* Limit width */
+    }
+
+     .redeemAction .btnPrimary { /* Target the button inside */
+         width: 80%; /* Make button wider on mobile */
+         max-width: 300px;
+     }
+
+     .successPopup {
+         padding: 15px 20px;
+     }
+     .successPopup h3 {
+         font-size: 1.1rem;
+     }
+     .successPopup p {
+         font-size: 0.85rem;
+     }
+}

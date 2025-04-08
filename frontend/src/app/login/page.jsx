@@ -113,10 +113,10 @@ export default function LoginPage() {
              <button type="button" className="border rounded p-2 w-full">Continue with Apple</button>
           </div>
           <div className="text-center">
-            <Link href="/forgot-password"> {/* Adjust link if needed */}
-              <span className="inline-block align-baseline font-bold text-sm text-yellow-600 hover:text-yellow-800 cursor-pointer">
+            <Link href="/forgot-password"> {/* Ensure this points to the correct route */}
+                <span className="inline-block align-baseline font-bold text-sm text-yellow-600 hover:text-yellow-800 cursor-pointer">
                 Forgot password?
-              </span>
+                </span>
             </Link>
           </div>
           <div className="text-center mt-4">

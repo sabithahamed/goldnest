@@ -1,0 +1,488 @@
+/* src/app/dashboard/Dashboard.module.css */
+
+/* --- Main Dashboard Layout --- */
+.dashboard {
+    padding: 15px 5%; /* Adjust padding if needed */
+    min-height: calc(100vh - 56px - 150px); /* Example: Adjust footer height estimate */
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Gap between rows */
+}
+
+.dashboardRow {
+    /* Common row styles if any - handled by grid below */
+}
+
+.topRow {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr); /* Default to 1 column */
+    gap: 12px;
+    align-items: stretch; /* Make cards same height in a row */
+}
+@media (min-width: 992px) { /* Adjust breakpoint */
+    .topRow {
+        grid-template-columns: repeat(2, 1fr); /* 2 columns on larger screens */
+    }
+}
+
+
+.middleRow {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+
+.bottomRow {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr); /* Default to 1 column */
+    gap: 12px;
+    flex: 1 1 auto; /* Allow bottom row to grow if needed */
+}
+@media (min-width: 768px) { /* Adjust breakpoint */
+     .bottomRow {
+         grid-template-columns: repeat(3, 1fr); /* 3 columns on medium+ screens */
+     }
+}
+
+/* --- Card Styling (Assuming a base .card style exists globally) --- */
+/* You can add dashboard-specific card overrides here if needed */
+.card {
+    /* Base card styles are likely global now */
+     /* Add specific overrides, e.g., height constraints if needed */
+     display: flex; /* Allow flex properties for children */
+     flex-direction: column; /* Stack content vertically */
+}
+
+.card h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+    flex-shrink: 0; /* Prevent title from shrinking */
+}
+
+.card h3 .carat {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #666;
+}
+
+/* --- Specific Card Content Styles --- */
+
+/* Gold Holdings Card */
+.goldHoldings {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-grow: 1; /* Allow this section to take up card space */
+}
+
+.goldHoldingsSplit {
+    display: flex;
+    flex-direction: column; /* Stack on small screens first */
+    gap: 12px;
+    align-items: stretch;
+    flex-grow: 1;
+}
+@media (min-width: 640px) { /* Example breakpoint for horizontal split */
+    .goldHoldingsSplit {
+        flex-direction: row;
+    }
+}
+
+.totalOwnedSection {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.totalOwned {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #FFFBEF;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+/* Assuming .totalOwned img styles are handled by Next Image props or global img */
+.totalOwned h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+}
+
+.totalOwned p {
+    font-size: 0.75rem;
+    color: #666;
+    margin: 0;
+    line-height: 1.3;
+}
+
+.highlight { /* Specific highlight for balance value */
+    color: #333; /* Or specific color */
+    font-weight: 600; /* Example */
+}
+
+.detailsSection {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: space-between; /* Space out details */
+}
+
+.profit h4, .averagePrice h4, .lastPurchase h4 { /* Changed class names */
+    font-size: 0.9rem; /* Slightly smaller */
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+.detailsSection p { /* Paragraphs within details section */
+    font-size: 0.75rem;
+    color: #666;
+    margin: 0 0 2px 0; /* Small space below label */
+}
+
+
+.profitPercentage { /* Changed class name */
+    color: #28a745;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.lastPurchase .date { /* Keep date style */
+    font-size: 0.7rem;
+    color: #888;
+}
+
+/* Live Price Card */
+.livePrice {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex-grow: 1;
+}
+
+.livePriceSplit {
+    display: flex;
+    flex-direction: column; /* Stack on small screens */
+    gap: 12px;
+    align-items: stretch;
+    flex-grow: 1;
+}
+@media (min-width: 640px) { /* Split horizontally on larger screens */
+    .livePriceSplit {
+        flex-direction: row;
+    }
+}
+
+.priceHistorySection {
+    flex: 1;
+    padding: 8px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    /* background-color: #fdfdfd; Optional subtle background */
+}
+
+.priceHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.priceHeader i { color: #F8B612; } /* Assuming FontAwesome */
+
+.priceHeader p {
+    font-size: 0.75rem;
+    color: #666;
+    margin: 0;
+}
+
+.currentPrice {
+    font-size: 1.6rem; /* Slightly smaller */
+    font-weight: 700;
+    color: #F8B612;
+    margin: 4px 0;
+}
+
+.recentPrices {
+    display: flex;
+    flex-direction: column;
+    gap: 6px; /* Reduced gap */
+    margin-top: 8px;
+}
+
+.recentPriceItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid #eee;
+}
+.recentPriceItem:last-child { border-bottom: none; }
+
+.recentPriceItem p { font-size: 0.75rem; color: #666; margin: 0; }
+.recentPriceItem span { font-weight: 500; color: #333; font-size: 0.75rem; } /* Adjusted weight/size */
+
+.trendSection {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    border-radius: 6px;
+}
+
+.trend { /* Container for trend info */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-grow: 1;
+    justify-content: space-between;
+}
+
+.trendHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.trendHeader i { color: #F8B612; }
+
+.priceChange {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 600;
+    font-size: 0.9rem; /* Match other text */
+}
+.priceChange.positive { color: #28a745; }
+.priceChange.negative { color: #dc3545; }
+.priceChange i { font-size: 0.9rem; }
+
+/* AI Insight Box */
+.aiInsight {
+    margin-top: 6px;
+    /* background-color: #f9f9f9; Optional background */
+    /* padding: 8px; */
+    /* border-radius: 4px; */
+    /* border-left: 3px solid #F8B612; Optional accent */
+}
+.aiLabel {
+    display: inline-block;
+    font-size: 0.75rem;
+    color: #F8B612;
+    font-weight: 500;
+    margin-right: 4px;
+}
+.aiInsight p {
+    font-size: 0.8rem;
+    color: #555;
+    margin: 0;
+    line-height: 1.4; /* Improved readability */
+}
+.aiInsight a { /* Link within insight */
+    color: #F8B612;
+    text-decoration: none;
+    font-size: 0.75rem;
+    margin-left: 4px;
+}
+.aiInsight a:hover { text-decoration: underline; }
+
+
+/* CTA Card */
+.ctaCard {
+    text-align: center;
+    background: linear-gradient(135deg, #FFFBEF 0%, #fcfcfc 100%);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+.ctaCard h3 { font-size: 1.1rem; margin: 0; color: #333; }
+.ctaCard p { font-size: 0.9rem; color: #666; margin: 0; }
+.ctaCard .highlight { /* Override default highlight if needed */
+    color: #e0a810;
+    font-weight: bold;
+}
+/* Assume .btnPrimary styles are global */
+
+
+/* Bottom Row Cards */
+
+/* Gamification Card */
+.gamification {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex-grow: 1; /* Allow content to fill card */
+    justify-content: center; /* Center placeholder content */
+}
+/* Add styles for actual gamification items later if needed */
+
+
+/* Alerts Card */
+.alerts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px; /* Space between alerts */
+    flex-grow: 1;
+}
+.alertItem {
+    display: flex;
+    justify-content: space-between; /* If adding actions later */
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.8rem;
+    color: #333;
+}
+.alertItem:last-child { border-bottom: none; }
+
+
+/* Redeem Card */
+.redeemCoin { /* Changed class name */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex-grow: 1;
+    justify-content: center; /* Center content */
+}
+/* Assuming .progressCircle styles are defined globally or not used for simplified SVG */
+.redeemCoin p {
+    font-size: 0.9rem;
+    font-weight: 500; /* Slightly less bold */
+    color: #333;
+    text-align: center;
+    margin: 0;
+}
+.redeemCoin .progressText { /* Changed class name */
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: #666;
+}
+.redeemOptions { /* Changed class name */
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+/* Assume .btn styles are global */
+/* Add .btnDisabled styles if not already global */
+.btnDisabled {
+    background-color: #ccc !important; /* Ensure override */
+    border-color: #ccc !important;
+    color: #888 !important;
+    cursor: not-allowed;
+    pointer-events: none; /* Prevent clicks */
+}
+
+
+/* --- General Purpose --- */
+/* Assume .seeMore and .btnSecondary styles are global from internal-styles */
+.seeMore {
+    margin: 8px auto 0;
+    display: block;
+    width: fit-content;
+    background-color: #e7e7e7;
+    color: #333;
+    border: none;
+}
+
+/* --- Button Styles --- */
+.btnPrimary {
+    background-color: #F8B612;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.btnPrimary:hover {
+    background-color: #e0a810;
+}
+
+.btnPrimary:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(248, 182, 18, 0.3);
+}
+
+.btnPrimary:disabled, .btn-disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.btnSecondary {
+    background-color: #fff;
+    color: #F8B612;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    border: 1px solid #F8B612;
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 120px;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.btnSecondary:hover {
+    background-color: #FFFBEF;
+    color: #F8B612;
+}
+
+.btnSecondary:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(248, 182, 18, 0.3);
+}
+
+.btnSecondary.btn-small {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    min-width: auto;
+}
+
+.seeMore {
+    margin: 8px auto 0;
+    display: block;
+    width: fit-content;
+    background-color: #e7e7e7;
+    color: #333;
+    border: none;
+}
+
+.seeMore:hover {
+    background-color: #d5d5d5;
+    color: #333;
+}
+
+/* --- Generic Card Styling --- */
+.card {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    margin-bottom: 12px;
+}
+
+

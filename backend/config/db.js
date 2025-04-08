@@ -1,20 +1,20 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 
-dotenv.config(); // Load .env variables
+dotenv.config();
 
 const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      // Options to avoid deprecation warnings (might not be strictly needed with latest Mongoose)
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      // No deprecated options
+      // You can add modern options here if needed
+      // Example: serverSelectionTimeoutMS: 5000
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error.message}`);
-    process.exit(1); // Exit process with failure
+    process.exit(1);
   }
 };
 

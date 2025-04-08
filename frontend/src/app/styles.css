@@ -1,0 +1,1404 @@
+/* @import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+/* --- Global Resets & Base Styles --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    background-color: #ffffff;
+    color: #333;
+    font-size: 16px;
+    line-height: 1.6;
+    /* Ensure footer is pushed down even on short pages */
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex-grow: 1; /* Allows main content to expand */
+}
+
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+/* --- Navbar (Shared) --- */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 5%;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar .logo img {
+    height: 40px;
+    width: auto;
+    display: block;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+}
+
+.nav-links li {
+    margin-left: 35px;
+}
+
+.nav-links a {
+    color: #333;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.3s ease;
+}
+
+.nav-links a:hover {
+    color: #F8B612;
+}
+
+/* Style for active nav link (add 'active' class in HTML) */
+.nav-links a.active {
+     color: #F8B612; /* Gold color */
+     font-weight: 600;
+}
+
+.nav-links .login-btn {
+    background-color: #F8B612;
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.nav-links .login-btn:hover {
+    background-color: #e0a810;
+}
+
+/* --- Generic CTA Button (Shared) --- */
+.cta-btn {
+    background-color: #F8B612;
+    color: #fff;
+    padding: 12px 35px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 1rem;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+    border: none; /* If used on button elements */
+}
+
+.cta-btn:hover {
+    background-color: #e0a810;
+}
+
+
+/* ============================================= */
+/* --- INDEX PAGE SPECIFIC STYLES --- */
+/* ============================================= */
+
+/* --- Hero Section (Index Page Only) --- */
+.hero {
+    padding: 60px 5% 30px;
+    background-color: #fff;
+    text-align: center;
+}
+
+.hero-content h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+    line-height: 1.3;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hero-content p {
+    font-size: 1.1rem;
+    color: #666;
+    margin-bottom: 30px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* --- Hero Image Slider (Index Page Only) --- */
+.hero-image-slider-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto 40px auto;
+    overflow: hidden;
+    background-color: #fff;
+    padding: 0 5%;
+    box-sizing: border-box;
+}
+
+@keyframes slideInfinite {
+    0% {
+        transform: translateX(0%);
+    }
+    100% {
+        transform: translateX(-50%); /* Moves left by the width of the first set of images */
+    }
+}
+
+.hero-image-slides {
+    width: 200%; /* Contains two sets of images */
+    display: flex;
+    /* Apply the continuous animation */
+    animation: slideInfinite 20s linear infinite; /* Adjust 20s to control speed */
+}
+
+/* Optional: Pause animation on hover */
+.hero-image-slider-container:hover .hero-image-slides {
+    animation-play-state: paused;
+}
+
+
+.hero-image-slides img {
+    width: 12.5%; /* 100% / 8 total images */
+    height: 180px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 0 10px; /* Space between images */
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+/* --- Features Section (Index Page Only) --- */
+.features {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 40px 5%;
+    background-color: #FFFBEF;
+    text-align: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.feature-item {
+    flex: 1;
+    min-width: 150px;
+    max-width: 200px;
+}
+
+.feature-item i {
+    font-size: 2.5rem;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.feature-item h3 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #333;
+}
+
+/* --- Why Choose GoldNest Section (Index Page Only) --- */
+.why-choose {
+    padding: 60px 5%;
+    background-color: #fff;
+}
+
+.why-choose h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 40px;
+    color: #333;
+}
+
+.why-choose-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 30px;
+}
+
+.why-choose-item {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #eee;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.why-choose-item .icon-bg {
+    width: 60px;
+    height: 60px;
+    background-color: #FFFBEF;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.why-choose-item i {
+    font-size: 1.8rem;
+    color: #F8B612;
+}
+
+.why-choose-item h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+}
+.why-choose-item p {
+    font-size: 0.9rem;
+    color: #666;
+    line-height: 1.5;
+}
+
+/* --- FAQ Section (Index Page Only) --- */
+.faq {
+    padding: 60px 5%;
+    background-color: #fff;
+}
+
+.faq h2 {
+    font-size: 2rem;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 40px;
+    color: #333;
+}
+
+.faq-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.faq-item {
+    margin-bottom: 10px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.faq-question {
+    background-color: #fff;
+    border: none;
+    padding: 15px 50px 15px 55px; /* Space for number and icon */
+    width: 100%;
+    text-align: left;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    position: relative;
+    color: #333;
+    transition: background-color 0.3s ease;
+}
+
+.faq-question:hover {
+    background-color: #f9f9f9;
+}
+
+.faq-number {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: #F8B612;
+    color: #fff;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.faq-question::after {
+    content: '\f067'; /* Font Awesome Plus Icon */
+    font-family: 'Font Awesome 5 Free';
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 900;
+    color: #F8B612;
+    font-size: 0.9rem;
+    transition: transform 0.2s ease-in-out; /* Add transition for icon */
+}
+
+.faq-question.active::after {
+    content: '\f068'; /* Font Awesome Minus Icon */
+    transform: translateY(-50%) rotate(180deg); /* Optional: Rotate minus icon */
+}
+
+.faq-answer {
+    display: none;
+    padding: 20px 25px 20px 55px; /* Indent answer */
+    background-color: #f9f9f9;
+    border-top: 1px solid #eee;
+}
+
+.faq-answer p {
+    font-size: 0.95rem;
+    color: #555;
+    line-height: 1.7;
+}
+
+/* --- Call to Action Section (Base Style - Index uses this directly) --- */
+.cta-section {
+    text-align: center;
+    padding: 50px 5%;
+    background-color: #FFFBEF;
+}
+
+.cta-section h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 25px;
+    color: #333;
+}
+
+
+/* ============================================= */
+/* --- ABOUT PAGE SPECIFIC STYLES --- */
+/* ============================================= */
+
+.about-page-content {
+    padding: 60px 5%;
+    background-color: #fff;
+    position: relative; /* Needed for background pseudo-element */
+    z-index: 1; /* Ensure content is above pseudo-element */
+    /* min-height is handled by main flex-grow: 1 */
+}
+
+/* Faded background image - CREATE a suitable faint coin image named background-coins.png */
+.about-page-content::before {
+    content: "";
+    /* Placeholder: replace with your actual faint background image */
+    background-image: url('/background-coins.png');
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-size: contain; /* Adjust as needed: cover, contain, % */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 60%; /* Adjust size */
+    height: 60%; /* Adjust size */
+    opacity: 0.08; /* Make it very faint */
+    z-index: -1; /* Place it behind the text */
+    pointer-events: none; /* Prevent interaction with background */
+}
+
+.about-container {
+    max-width: 900px; /* Limit content width */
+    margin: 0 auto; /* Center the content */
+    text-align: left; /* Default text align */
+}
+
+/* Page Title specific to About */
+.about-page-content h1 {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 50px;
+    color: #333;
+}
+
+/* Text Sections within About */
+.about-section {
+    margin-bottom: 40px;
+    position: relative; /* Ensure text stays above pseudo-element */
+    z-index: 2;
+}
+
+.about-section h2 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.about-section p {
+    font-size: 1rem;
+    color: #555; /* Slightly darker gray */
+    line-height: 1.7;
+    margin-bottom: 15px;
+}
+
+/* Highlight Span (About Page) */
+.highlight {
+    color: #F8B612; /* Gold color */
+    font-weight: 500; /* Slightly bolder */
+}
+
+/* Specific CTA section styling for About page (overrides base if needed) */
+/* Use class="cta-section about-cta" in about.html */
+.cta-section.about-cta {
+     padding: 60px 5%; /* Can adjust padding if needed */
+     /* background: #FFFBEF; Inherited */
+     /* text-align: center; Inherited */
+}
+
+ .cta-section.about-cta h2 {
+    font-size: 2rem; /* Can adjust size */
+    /* Inherits base styles */
+}
+ .cta-section.about-cta .cta-btn {
+    /* Reusing base .cta-btn styles, just centering it */
+    margin: 0 auto; /* Center button */
+    /* display: inline-block; Inherited */
+}
+
+
+/* ============================================= */
+/* --- FOOTER (Shared) --- */
+/* ============================================= */
+
+.footer {
+    background-color: #fff;
+    padding: 50px 5% 20px;
+    border-top: 1px solid #eee;
+    margin-top: auto; /* Push footer to bottom with flexbox */
+}
+
+.footer-content {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 30px;
+}
+
+.footer-section {
+    flex: 1;
+    min-width: 150px;
+}
+.footer-section.logo-section {
+    flex-basis: 200px;
+    flex-grow: 0;
+}
+.footer-logo {
+    height: 35px;
+    width: auto;
+    margin-bottom: 10px;
+}
+
+.footer-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.footer-section ul li {
+    margin-bottom: 8px;
+}
+
+.footer-section a { /* Applies to links in lists */
+    color: #666;
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+}
+
+.footer-section a:hover {
+    color: #F8B612;
+}
+.footer-section p a { /* Style email link specifically */
+     color: #666;
+     font-size: 0.9rem;
+}
+.footer-section p a:hover {
+     color: #F8B612;
+}
+
+.payment-icons img {
+    height: 25px;
+    width: auto;
+    margin-right: 10px;
+    opacity: 0.8;
+    vertical-align: middle; /* Align icons better */
+}
+
+.social-icons a {
+    color: #555;
+    font-size: 1.3rem;
+    margin-right: 15px;
+    transition: color 0.3s ease;
+}
+.social-icons a:last-child {
+    margin-right: 0;
+}
+
+.social-icons a:hover {
+    color: #F8B612;
+}
+
+.footer-bottom {
+    text-align: center;
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+    color: #888;
+    font-size: 0.85rem;
+}
+
+
+/* ============================================= */
+/* --- RESPONSIVE ADJUSTMENTS (Shared) --- */
+/* ============================================= */
+
+@media (max-width: 992px) {
+    /* Index Page Adjustments */
+    .hero-content h1 { font-size: 2.2rem; }
+    .hero-content p { font-size: 1rem; }
+    .why-choose-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+    /* About Page Adjustments */
+    .about-page-content h1 { font-size: 2.2rem; }
+    .about-section h2 { font-size: 1.6rem; }
+
+    /* Footer Adjustments */
+    .footer-content { justify-content: flex-start; }
+    .footer-section { flex-basis: 45%; margin-bottom: 20px; }
+    .footer-section.logo-section { flex-basis: 100%; text-align: center; }
+    .footer-logo { margin: 0 auto 10px auto; }
+    .footer-section.logo-section p { text-align: center; }
+}
+
+@media (max-width: 768px) {
+    /* Navbar Adjustments */
+    .navbar { padding: 10px 3%; flex-direction: column; align-items: center; }
+    .navbar .logo { margin-bottom: 10px; }
+    .nav-links { justify-content: center; flex-wrap: wrap; padding: 0; }
+    .nav-links li { margin: 5px 10px; }
+
+    /* Index Page Adjustments */
+    .hero-content h1 { font-size: 1.8rem; }
+    .hero-content p { font-size: 0.95rem; }
+    .hero-image-slides img { height: 120px; padding: 0 5px; }
+    .hero-image-slider-container { margin-bottom: 30px; }
+    /* Optional: Slow down animation slightly on mobile */
+    /* .hero-image-slides { animation-duration: 25s; } */
+    .features { flex-direction: column; gap: 30px; }
+    .why-choose h2, .faq h2 { font-size: 1.6rem; } /* Base CTA h2 handled below */
+    .why-choose-grid { grid-template-columns: 1fr; }
+    .faq-question { padding: 12px 45px 12px 50px; font-size: 0.95rem; }
+    .faq-answer { padding: 15px 20px 15px 50px; font-size: 0.9rem; }
+
+    /* About Page Adjustments */
+    .about-page-content { padding: 40px 5%; }
+    .about-page-content h1 { font-size: 2rem; margin-bottom: 30px;}
+    .about-section h2 { font-size: 1.5rem; }
+    .about-section p { font-size: 0.95rem; }
+    .about-page-content::before { width: 90%; height: 50%; } /* Adjust background size/pos */
+
+    /* Shared CTA Adjustments */
+    .cta-section h2 { font-size: 1.6rem; } /* Adjusts h2 for ALL CTA sections */
+
+    /* Footer Adjustments */
+    .footer-section { flex-basis: 100%; text-align: center; }
+    .footer-section ul { padding-left: 0; }
+    .payment-icons, .social-icons { justify-content: center; display: flex; }
+    .payment-icons img:last-child, .social-icons a:last-child { margin-right: 0; }
+}
+
+/* --- Calculator Page Specific Styles --- */
+.calculator-page-section {
+    padding: 60px 5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 150px); /* Adjust based on navbar/footer height */
+}
+
+.calculator-container {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    max-width: 900px; /* Adjust max-width as needed */
+    width: 100%;
+}
+
+.calculator-container h2 {
+    text-align: left;
+    margin-bottom: 35px;
+    font-weight: 600;
+    font-size: 1.8rem; /* Slightly larger heading */
+}
+
+.calculator-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two equal columns */
+    gap: 50px; /* Space between columns */
+}
+
+/* --- Input Column Styles --- */
+.calculator-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 25px; /* Space between input groups */
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 0.95rem;
+    color: #555;
+}
+
+.input-dropdown {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #f7f7f7;
+    font-family: inherit;
+    font-size: 1rem;
+    appearance: none; /* Remove default appearance */
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23007bff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); /* Simple dropdown arrow */
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 10px 10px;
+    padding-right: 30px; /* Space for arrow */
+    cursor: pointer;
+}
+
+
+.slider-group label {
+    margin-bottom: 15px; /* More space below label for slider groups */
+}
+
+.slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background-color: #fff8e1; /* Light yellow background */
+    padding: 5px 15px;
+    border-radius: 25px; /* Pill shape */
+    border: 1px solid #f0e0b0; /* Light border */
+}
+
+.input-prefix,
+.input-suffix {
+    font-weight: 500;
+    color: #555;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+input[type="range"] {
+    flex-grow: 1;
+    height: 8px;
+    cursor: pointer;
+    appearance: none;
+    width: 100%;
+    background: #e7e7e7; /* Grey track */
+    border-radius: 5px;
+    outline: none;
+    margin: 0 5px; /* Add slight margin */
+}
+
+/* Slider Thumb */
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: #e0ac3c; /* Gold thumb */
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid #fff; /* White border like image */
+    box-shadow: 0 0 3px rgba(0,0,0,0.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #e0ac3c;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid #fff;
+    box-shadow: 0 0 3px rgba(0,0,0,0.2);
+}
+
+.input-value {
+    width: 100px; /* Fixed width for number inputs */
+    padding: 6px 10px;
+    border: none;
+    background: transparent; /* Inherit yellow background */
+    font-weight: 600;
+    font-size: 1rem;
+    text-align: right;
+    font-family: inherit;
+    color: #333;
+    appearance: textfield; /* Remove number spinners for Chrome/Safari */
+    -moz-appearance: textfield; /* Remove number spinners for Firefox */
+    flex-shrink: 0;
+}
+.input-value.years { width: 60px; text-align: center;}
+.input-value.percent { width: 60px; text-align: center;}
+
+
+/* Hide number input spinners */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* --- Output Column Styles --- */
+.calculator-outputs {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center items horizontally */
+}
+
+.chart-container {
+    width: 180px; /* Size of the donut */
+    height: 180px;
+    margin-bottom: 25px;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.donut-chart {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    /* Gradient set by JS */
+    background: conic-gradient(#333 0% 75%, #888 75% 100%); /* Default placeholder */
+    position: relative; /* Needed for pseudo-element */
+}
+
+/* Create the "hole" in the donut */
+.donut-chart::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%; /* Size of the hole */
+    height: 70%;
+    background-color: #ffffff; /* Match container background */
+    border-radius: 50%;
+    z-index: 1; /* Above the gradient */
+}
+
+.chart-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #333;
+    z-index: 2; /* Above the hole */
+    text-align: center;
+    line-height: 1.2;
+}
+
+.chart-legend ul {
+    display: flex;
+    justify-content: center;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.chart-legend li {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.legend-dot.invested { background-color: #333333; }
+.legend-dot.returns { background-color: #888888; }
+
+.output-details {
+    width: 100%;
+    max-width: 350px; /* Limit width of output details */
+    margin-bottom: 30px;
+}
+
+.output-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    font-size: 1rem;
+}
+
+.output-row span:first-child {
+    color: #555; /* Label color */
+}
+
+.output-value {
+    font-weight: 600;
+    color: #333;
+}
+
+.output-divider {
+    border: none;
+    height: 1px;
+    background-color: #eee;
+    margin: 5px 0;
+}
+
+.output-row.total {
+    padding-top: 15px;
+    font-size: 1.1rem;
+}
+.output-row.total span:first-child {
+    font-weight: 600;
+     color: #333;
+}
+.output-row.total .output-value {
+    font-weight: 700;
+    color: #e0ac3c; /* Gold color for total value */
+    font-size: 1.2rem;
+}
+
+
+.calculator-description {
+    text-align: center;
+    margin-top: 40px;
+    font-size: 0.9rem;
+    color: #777;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+}
+
+
+@media (max-width: 480px) {
+    .slider-wrapper {
+       flex-wrap: wrap; /* Allow wrapping inside the yellow box */
+       padding: 10px 15px;
+       justify-content: center; /* Center items when wrapped */
+    }
+    input[type="range"] {
+        order: 2; /* Put slider below */
+        width: 100%;
+        margin: 10px 0 0 0; /* Add margin top */
+    }
+     .input-prefix {
+         order: 1;
+     }
+     .input-value {
+         order: 1;
+         flex-grow: 1; /* Allow number input to take more space */
+         margin: 0 5px;
+     }
+     .input-suffix {
+         order: 1;
+     }
+
+     .input-value { width: auto;} /* Reset fixed width */
+     .input-value.years { width: auto; }
+     .input-value.percent { width: auto; }
+
+    .calculator-container h2 {
+        font-size: 1.5rem;
+        margin-bottom: 25px;
+    }
+
+    .chart-container {
+        width: 150px;
+        height: 150px;
+    }
+    .chart-value {
+        font-size: 1.1rem;
+    }
+}
+
+/* ============================================= */
+/* --- MARKET PAGE SPECIFIC STYLES --- */
+/* ============================================= */
+
+.market-section {
+    max-width: 950px; /* Adjust width as needed */
+    margin: 40px auto; /* Center section and add top/bottom margin */
+    padding: 40px 30px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+    /* Use flex-grow on main in base styles to push footer */
+}
+
+.market-section h2 {
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 600;
+    margin-bottom: 35px;
+    color: #333;
+}
+
+.chart-tabs {
+    display: flex;
+    justify-content: center; /* Center the tabs */
+    margin-bottom: 25px;
+    border-bottom: 2px solid #eee; /* Subtle line under tabs */
+    flex-wrap: wrap; /* Allow tabs to wrap on small screens */
+}
+
+.tab-button {
+    padding: 10px 25px;
+    margin: 0 5px 0 5px; /* Add bottom margin for wrapping */
+    border: none;
+    background-color: transparent;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 3px solid transparent; /* Indicator space */
+    transition: color 0.3s ease, border-color 0.3s ease;
+    white-space: nowrap; /* Prevent text wrapping within button */
+}
+
+.tab-button:hover {
+    color: #F8B612; /* Gold color on hover */
+}
+
+.tab-button.active {
+    color: #F8B612; /* Gold color for active tab */
+    font-weight: 600;
+    border-bottom-color: #F8B612; /* Gold indicator line */
+}
+
+.chart-display-area {
+    margin-top: 20px; /* Space between tabs and chart */
+    background-color: #fdfdfd; /* Very light bg for chart area */
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #f0f0f0;
+}
+
+.chart-content {
+    display: none; /* Hide inactive charts */
+    animation: fadeIn 0.5s ease-in-out; /* Simple fade animation */
+}
+
+.chart-content.active {
+    display: block; /* Show active chart */
+}
+
+.chart-content img {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Remove extra space below image */
+    margin: 0 auto; /* Center image if container is wider */
+    border-radius: 5px; /* Optional: slight rounding on image corners */
+}
+
+.chart-disclaimer {
+    text-align: center;
+    margin-top: 30px;
+    font-size: 0.85rem;
+    color: #888;
+    padding: 0 15px;
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Add specific responsive adjustments for Market page if needed */
+@media (max-width: 768px) {
+    .market-section {
+        margin: 25px auto;
+        padding: 30px 20px;
+    }
+    .market-section h2 {
+        font-size: 1.6rem;
+        margin-bottom: 25px;
+    }
+    .tab-button {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+        margin-bottom: 10px; /* Space when wrapped */
+    }
+    .chart-display-area {
+        padding: 10px;
+    }
+    .chart-disclaimer {
+        font-size: 0.8rem;
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .market-section {
+        margin: 20px 15px; /* Reduce side margin */
+        padding: 25px 15px;
+    }
+    .market-section h2 {
+        font-size: 1.4rem;
+    }
+     .chart-tabs {
+        margin-bottom: 15px;
+    }
+}
+/* ============================================= */
+/* --- MARKET PAGE SPECIFIC STYLES --- */
+/* ============================================= */
+
+/* Main container for the market content */
+.market-section {
+    max-width: 950px; /* Max width of the content area */
+    margin: 40px auto; /* Center the section horizontally, add top/bottom margin */
+    padding: 40px 30px; /* Inner spacing */
+    background-color: #fff; /* White background */
+    border-radius: 12px; /* Rounded corners */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07); /* Subtle shadow */
+}
+
+/* Title for the market section */
+.market-section h2 {
+    text-align: center; /* Center the title */
+    font-size: 2rem; /* Title font size */
+    font-weight: 600; /* Title font weight */
+    margin-bottom: 35px; /* Space below the title */
+    color: #333; /* Title color */
+}
+
+/* Container for the tab buttons */
+.chart-tabs {
+    display: flex; /* Use flexbox for layout */
+    justify-content: center; /* Center the tabs horizontally */
+    margin-bottom: 25px; /* Space below the tabs */
+    border-bottom: 2px solid #eee; /* Line under the tabs */
+    flex-wrap: wrap; /* Allow tabs to wrap on smaller screens */
+}
+
+/* Individual tab buttons */
+.tab-button {
+    padding: 10px 25px; /* Padding inside the button */
+    margin: 0 5px 0 5px; /* Horizontal margin, ensure no bottom margin here initially */
+    border: none; /* Remove default border */
+    background-color: transparent; /* No background color */
+    font-family: 'Poppins', sans-serif; /* Inherit font */
+    font-size: 1rem; /* Font size */
+    font-weight: 500; /* Font weight */
+    color: #666; /* Default text color */
+    cursor: pointer; /* Pointer cursor on hover */
+    border-bottom: 3px solid transparent; /* Space for active indicator */
+    transition: color 0.3s ease, border-color 0.3s ease; /* Smooth transitions */
+    white-space: nowrap; /* Prevent text wrapping inside button */
+    outline: none; /* Remove default focus outline */
+}
+
+/* Tab button hover state */
+.tab-button:hover {
+    color: #F8B612; /* Gold color on hover */
+}
+
+/* Tab button active state */
+.tab-button.active {
+    color: #F8B612; /* Gold color for active tab */
+    font-weight: 600; /* Make active tab bolder */
+    border-bottom-color: #F8B612; /* Gold indicator line */
+}
+
+/* Area where the chart content (canvas container) is displayed */
+.chart-display-area {
+    margin-top: 20px; /* Space above the chart area */
+    background-color: #fff; /* White background */
+    border-radius: 8px; /* Rounded corners */
+    padding: 15px; /* Padding around the chart container */
+}
+
+/* Container DIV that directly holds the <canvas> element */
+.chart-container {
+    position: relative; /* Required for Chart.js responsiveness */
+    height: 350px; /* Default height - Adjust as needed */
+    width: 100%; /* Take full width of its parent */
+    margin: 0 auto; /* Center within display area if needed */
+    max-width: 800px; /* Optional: Limit chart width */
+    padding: 10px; /* Padding inside the border, around the canvas */
+    border: 1px solid #eee; /* Light border around the chart */
+    border-radius: 6px; /* Rounded corners for the border */
+    background-color: #fdfdfd; /* Slightly off-white background */
+}
+
+/* DIV containing each chart (e.g., gold price chart, inflation chart) */
+.chart-content {
+    display: none; /* Hide inactive chart containers by default */
+    animation: fadeIn 0.5s ease-in-out; /* Apply fade-in animation */
+}
+
+/* Style for the currently visible chart container */
+.chart-content.active {
+    display: block; /* Show the active chart container */
+}
+
+/* Keyframe animation for chart fade-in */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Disclaimer text below the chart */
+.chart-disclaimer {
+    text-align: center; /* Center the text */
+    margin-top: 30px; /* Space above the disclaimer */
+    font-size: 0.85rem; /* Smaller font size */
+    color: #888; /* Grey text color */
+    padding: 0 15px; /* Horizontal padding */
+}
+
+
+/* ============================================= */
+/* --- MARKET PAGE RESPONSIVE ADJUSTMENTS --- */
+/* ============================================= */
+
+@media (max-width: 992px) {
+    .market-section {
+        padding: 30px 20px; /* Adjust padding */
+    }
+    .chart-container {
+        height: 320px; /* Adjust chart height */
+    }
+}
+
+@media (max-width: 768px) {
+     .market-section h2 {
+        font-size: 1.6rem; /* Smaller title */
+        margin-bottom: 25px; /* Adjust spacing */
+    }
+     .chart-container {
+        height: 300px; /* Adjust chart height */
+        padding: 5px; /* Reduce padding */
+    }
+     .tab-button {
+        padding: 8px 15px; /* Smaller padding */
+        font-size: 0.9rem; /* Smaller font */
+        margin-bottom: 10px; /* Add space below tabs when they wrap */
+    }
+     .chart-disclaimer {
+        font-size: 0.8rem; /* Smaller font */
+        margin-top: 20px; /* Adjust spacing */
+    }
+}
+
+@media (max-width: 480px) {
+    .market-section {
+        margin: 20px 15px; /* Adjust margins */
+        padding: 25px 15px; /* Adjust padding */
+    }
+    .chart-container {
+        height: 250px; /* Adjust chart height for smallest screens */
+    }
+    /* Title size adjusted globally in 768px query */
+}
+
+
+
+
+/* ============================================= */
+/* --- FORGOT PASSWORD PAGE SPECIFIC STYLES --- */
+/* ============================================= */
+
+.forgot-password-section {
+    padding: 60px 5%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-grow: 1; /* Ensures it takes up space to push footer down */
+    background-color: #f9f9f9; /* Optional: Light background for the whole section */
+}
+
+.forgot-password-container {
+    background-color: #ffffff;
+    padding: 40px 45px; /* Generous padding */
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    max-width: 480px; /* Limit width for a focused form */
+    width: 100%;
+    text-align: center; /* Center align title and text */
+}
+
+.forgot-password-container h2 {
+    margin-bottom: 15px;
+    font-weight: 600;
+    font-size: 1.8rem;
+    color: #333;
+}
+
+.forgot-password-container .instruction-text {
+    margin-bottom: 30px;
+    font-size: 0.95rem;
+    color: #666;
+    line-height: 1.6;
+}
+
+#forgotPasswordForm {
+    text-align: left; /* Align form elements left */
+    margin-bottom: 25px;
+}
+
+.input-group-fp {
+    margin-bottom: 20px;
+}
+
+.input-group-fp label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.input-group-fp input[type="email"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fff;
+    font-family: inherit;
+    font-size: 1rem;
+    box-sizing: border-box; /* Include padding and border in width */
+    transition: border-color 0.3s ease;
+}
+.input-group-fp input[type="phone number"] {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fff;
+    font-family: inherit;
+    font-size: 1rem;
+    box-sizing: border-box; /* Include padding and border in width */
+    transition: border-color 0.3s ease;
+}
+
+.input-group-fp input[type="email"]:focus {
+    border-color: #F8B612; /* Gold border on focus */
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(248, 182, 18, 0.2); /* Subtle glow on focus */
+}
+.input-group-fp input[type="phone number"]:focus {
+    border-color: #F8B612; /* Gold border on focus */
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(248, 182, 18, 0.2); /* Subtle glow on focus */
+}
+
+.forgot-submit-btn {
+    width: 100%; /* Make button full width */
+    padding: 12px 20px; /* Adjust padding if needed */
+    font-size: 1rem;
+    margin-top: 10px; /* Space above button */
+}
+
+.back-link {
+    margin-top: 20px;
+    font-size: 0.9rem;
+}
+
+.back-link a {
+    color: #555;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.back-link a:hover {
+    color: #F8B612; /* Gold color on hover */
+    text-decoration: underline;
+}
+.form-error {
+    color: #dc3545; /* A standard red error color */
+    font-size: 0.85rem;
+    margin-top: -10px; /* Pull up slightly below the input */
+    margin-bottom: 15px; /* Space before the next element */
+    text-align: left; /* Align with input labels */
+    display: none; /* Hidden by default */
+    width: 100%; /* Ensure it takes full width if needed */
+}
+
+/* Adjust styling within specific containers if needed */
+.forgot-password-container .form-error {
+     /* Specific adjustments for forgot password form if needed */
+     margin-top: 5px; /* Example: slightly more space */
+}
+
+/* Style for the link version of the login button */
+.login-btn-link {
+    /* Inherit general link styles or add specific ones */
+    color: #F8B612; /* Example: Make it gold */
+    font-weight: 500;
+    text-decoration: none;
+    margin-left: 5px; /* Space from label */
+    cursor: pointer;
+}
+.login-btn-link:hover {
+    text-decoration: underline;
+}
+
+/* Responsive adjustments for Forgot Password Form */
+@media (max-width: 768px) {
+    .forgot-password-container {
+        padding: 30px 35px;
+    }
+    .forgot-password-container h2 {
+        font-size: 1.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .forgot-password-section {
+        padding: 40px 3%; /* Less padding on mobile */
+    }
+     .forgot-password-container {
+        padding: 25px 20px;
+    }
+    .forgot-password-container h2 {
+        font-size: 1.4rem;
+    }
+     .forgot-password-container .instruction-text {
+        font-size: 0.9rem;
+        margin-bottom: 25px;
+    }
+     .input-group-fp input[type="email"] {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+    }
+     .input-group-fp input[type="phone number"] {
+        padding: 10px 12px;
+        font-size: 0.95rem;
+    }
+}
