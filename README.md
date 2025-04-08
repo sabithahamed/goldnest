@@ -11,10 +11,10 @@ GoldNest is a revolutionary web-based micro-investment platform that enables Sri
 👉 [Access the Live Web App](https://goldnest.pages.dev/)
 
 ---
-
+https://youtu.be/SWxawZ3ywLU
 ## 🎥 Demo Video
 
-🎬 [Watch the 3-Minute Feature Demo](https://your-video-link.com)
+🎬 [Watch the 3-Minute Feature Demo](https://youtu.be/SWxawZ3ywLU)
 
 ---
 
