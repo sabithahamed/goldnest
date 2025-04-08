@@ -117,40 +117,43 @@ ul {
 /* ============================================= */
 
 /* --- Hero Section (Index Page Only) --- */
+/* --- Hero Section --- */
 .hero {
     padding: 60px 5% 30px;
     background-color: #fff;
-    text-align: center;
+    text-align: left;
 }
 
 .hero-content h1 {
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: 600;
-    margin-bottom: 15px;
+    margin-bottom: 25px;
     color: #333;
     line-height: 1.3;
-    margin-left: auto;
-    margin-right: auto;
+    max-width: 700px;
 }
 
 .hero-content p {
     font-size: 1.1rem;
     color: #666;
-    margin-bottom: 30px;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
+    margin-bottom: 40px;
+    max-width: 700px;
 }
 
-/* --- Hero Image Slider (Index Page Only) --- */
+.hero-content a {
+    margin-left: 20px;
+}
+
+/* --- Hero Image Slider --- */
 .hero-image-slider-container {
     width: 100%;
-    max-width: 1200px;
-    margin: 0 auto 40px auto;
+    margin: 0 auto;
     overflow: hidden;
     background-color: #fff;
     padding: 0 5%;
     box-sizing: border-box;
+    margin-bottom: 50px;
+    position: relative;
 }
 
 @keyframes slideInfinite {
@@ -158,55 +161,52 @@ ul {
         transform: translateX(0%);
     }
     100% {
-        transform: translateX(-50%); /* Moves left by the width of the first set of images */
+        transform: translateX(-50%); /* Moves left by half the container width */
     }
 }
 
 .hero-image-slides {
-    width: 200%; /* Contains two sets of images */
     display: flex;
-    /* Apply the continuous animation */
-    animation: slideInfinite 20s linear infinite; /* Adjust 20s to control speed */
+    width: 200%; /* Two sets of four images */
+    animation: slideInfinite 20s linear infinite; /* Restore animation */
 }
 
-/* Optional: Pause animation on hover */
 .hero-image-slider-container:hover .hero-image-slides {
     animation-play-state: paused;
 }
 
-
 .hero-image-slides img {
-    width: 12.5%; /* 100% / 8 total images */
-    height: 180px;
+    width: 12.5%; /* 100% / 8 images */
+    height: 300px; /* Keep your new height */
     object-fit: cover;
-    border-radius: 8px;
+    border-radius: 25px; /* Keep your new border-radius */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    padding: 0 10px; /* Space between images */
+    padding: 0 10px;
     box-sizing: border-box;
     flex-shrink: 0;
 }
 
-/* --- Features Section (Index Page Only) --- */
+/* --- Features Section (Minimal Design with Adjusted Padding) --- */
 .features {
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
     align-items: center;
-    padding: 40px 5%;
+    padding: 60px 5%; /* Adjusted padding for better spacing */
     background-color: #FFFBEF;
     text-align: center;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 30px; /* Adjusted gap for better spacing */
 }
 
 .feature-item {
     flex: 1;
     min-width: 150px;
-    max-width: 200px;
+    padding: 20px; /* Adjusted padding for better spacing */
 }
 
 .feature-item i {
     font-size: 2.5rem;
-    color: #333;
+    color: #F8B612;
     margin-bottom: 15px;
 }
 
@@ -216,10 +216,11 @@ ul {
     color: #333;
 }
 
-/* --- Why Choose GoldNest Section (Index Page Only) --- */
+/* --- Why Choose GoldNest Section (Full-Width with Equal-Sized, Taller Cards) --- */
 .why-choose {
-    padding: 60px 5%;
+    padding: 60px 0; /* Remove side padding to make section full-width */
     background-color: #fff;
+    width: 100%; /* Ensure the section takes the full width */
 }
 
 .why-choose h2 {
@@ -231,18 +232,36 @@ ul {
 }
 
 .why-choose-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 30px;
+    display: flex;
+    justify-content: center; /* Center the items */
+    align-items: stretch; /* Ensure cards stretch to the same height */
+    flex-wrap: nowrap; /* Keep items in a single line */
+    gap: 30px; /* Adjusted gap for better spacing */
+    overflow-x: auto; /* Allow horizontal scrolling on smaller screens */
+    padding: 0; /* Remove padding to make cards stretch to edges */
+    width: 100%; /* Ensure the grid takes the full width */
 }
 
 .why-choose-item {
-    background-color: #fff;
-    padding: 25px;
-    border-radius: 10px;
     text-align: center;
-    border: 1px solid #eee;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    padding: 30px; /* Increased padding for better spacing inside cards */
+    width: 250px; /* Fixed width to make cards equal in size */
+    height: 300px; /* Increased height to make cards taller */
+    flex-shrink: 0; /* Prevent items from shrinking */
+    background-color: #fff; /* Card background */
+    border: 1px solid #eee; /* Card border */
+    border-radius: 10px; /* Card rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Card shadow */
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Smooth hover effect */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Center content vertically */
+    align-items: center; /* Center content horizontally */
+}
+
+.why-choose-item:hover {
+    transform: translateY(-5px); /* Slight lift on hover */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
 }
 
 .why-choose-item .icon-bg {
@@ -253,27 +272,28 @@ ul {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 15px;
+    margin-bottom: 20px; /* Increased margin for better spacing */
 }
 
 .why-choose-item i {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
     color: #F8B612;
 }
 
 .why-choose-item h3 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin-bottom: 8px;
+    font-size: 1.2rem; /* Slightly larger font for better readability */
+    font-weight: 500;
+    margin-bottom: 10px;
     color: #333;
 }
+
 .why-choose-item p {
-    font-size: 0.9rem;
+    font-size: 0.95rem; /* Slightly larger font for better readability */
     color: #666;
-    line-height: 1.5;
+    line-height: 1.4;
 }
 
-/* --- FAQ Section (Index Page Only) --- */
+/* --- FAQ Section --- */
 .faq {
     padding: 60px 5%;
     background-color: #fff;
@@ -302,7 +322,7 @@ ul {
 .faq-question {
     background-color: #fff;
     border: none;
-    padding: 15px 50px 15px 55px; /* Space for number and icon */
+    padding: 15px 50px 15px 55px;
     width: 100%;
     text-align: left;
     font-size: 1rem;
@@ -335,26 +355,26 @@ ul {
 }
 
 .faq-question::after {
-    content: '\f067'; /* Font Awesome Plus Icon */
+    content: '\f067';
     font-family: 'Font Awesome 5 Free';
     position: absolute;
     right: 20px;
     top: 50%;
     transform: translateY(-50%);
     font-weight: 900;
-    color: #F8B612;
+    color: #000000;
     font-size: 0.9rem;
-    transition: transform 0.2s ease-in-out; /* Add transition for icon */
+    transition: transform 0.2s ease-in-out;
 }
 
 .faq-question.active::after {
-    content: '\f068'; /* Font Awesome Minus Icon */
-    transform: translateY(-50%) rotate(180deg); /* Optional: Rotate minus icon */
+    content: '\f068';
+    transform: translateY(-50%) rotate(180deg);
 }
 
 .faq-answer {
     display: none;
-    padding: 20px 25px 20px 55px; /* Indent answer */
+    padding: 20px 25px 20px 55px;
     background-color: #f9f9f9;
     border-top: 1px solid #eee;
 }
@@ -365,7 +385,7 @@ ul {
     line-height: 1.7;
 }
 
-/* --- Call to Action Section (Base Style - Index uses this directly) --- */
+/* --- Call to Action Section --- */
 .cta-section {
     text-align: center;
     padding: 50px 5%;
@@ -378,7 +398,6 @@ ul {
     margin-bottom: 25px;
     color: #333;
 }
-
 
 /* ============================================= */
 /* --- ABOUT PAGE SPECIFIC STYLES --- */
