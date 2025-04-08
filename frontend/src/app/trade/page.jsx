@@ -440,7 +440,7 @@ export default function TradePage() {
                                             checked={paymentMethod === 'payhere'}
                                             onChange={(e) => setPaymentMethod(e.target.value)}
                                         />
-                                        Card Payment through Payhere <Image src="/paytm-icon.png" alt="Payhere" width={60} height={15} />
+                                        Card Payment through Payhere <Image src="/payhere-logo.png" alt="Payhere" width={60} height={15} />
                                     </label>
                                     <label>
                                         <input
