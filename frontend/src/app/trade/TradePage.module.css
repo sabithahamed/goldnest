@@ -1,34 +1,41 @@
 /* src/app/trade/TradePage.module.css */
 
+/* --- Wrapper for the Entire Page --- */
+.pageWrapper {
+    min-height: 100vh;
+    background-color: #e6f0fa;
+}
+
 /* --- Base Trade Page Styles --- */
 .trade {
     padding: 15px 5%;
-    min-height: calc(100vh - 56px); /* Adjust if navbar height differs */
+    min-height: calc(100vh - 56px);
     display: flex;
     flex-direction: column;
     gap: 12px;
-    max-width: 900px; /* Constrain width */
-    margin: 0 auto; /* Center content */
+    margin: 0 auto;
 }
 
-/* --- Card Styles (Generic card used on this page) --- */
+/* --- Card Styles --- */
 .card {
     background-color: #fff;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-    padding: 15px;
+    padding: 12px;
     width: 100%;
-    /* max-width: 900px; */ /* Moved to .trade container */
-    /* margin: 0 auto; */   /* Moved to .trade container */
+    max-width: 1000px;
+}
+
+.tradeGoldCard {
+    padding: 12px 36px 12px 36px; /* Increased left padding to 24px, others remain 12px */
 }
 
 .card h3 {
-    font-size: 1.1rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: #333;
     margin-bottom: 12px;
 }
-
 
 .walletBalanceContent {
     display: flex;
@@ -60,38 +67,37 @@
     justify-content: center;
 }
 
-.balanceIcon { /* For Font Awesome icon */
+.balanceIcon {
     color: #fff;
     font-size: 0.9rem;
 }
 
-.goldIcon { /* For Image component */
+.goldIcon {
     width: 16px;
     height: 16px;
-    display: block; /* Good practice for images */
+    display: block;
 }
 
 .balanceHeader p {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: #666;
-    margin: 0; /* Reset margin if needed */
+    margin: 0;
 }
 
-.walletBalance h2 { /* Target h2 specifically within walletBalance card */
-    font-size: 1.5rem;
+.walletBalance h2 {
+    font-size: 1.75rem;
     font-weight: 600;
     color: #333;
     margin: 8px 0;
 }
 
 .highlight {
-    font-size: 0.8rem;
-    /* Color handled by .positive/.negative */
+    font-size: 0.9rem;
     margin: 4px 0;
 }
 
 .recentActivity {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     color: #999;
 }
 
@@ -99,7 +105,7 @@
     width: 1px;
     height: 80px;
     background-color: #ddd;
-    margin: 0 10px; /* Add some margin */
+    margin: 0 10px;
 }
 
 /* --- Trade Form Styles --- */
@@ -117,7 +123,7 @@
 }
 
 .tradeToggle label {
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: #333;
     display: flex;
     align-items: center;
@@ -130,29 +136,39 @@
     cursor: pointer;
 }
 
-
-.formGroup { /* If you use this class for structure */
+.formGroup {
     margin-bottom: 12px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
 }
 
-/* Targeting the specific input field if needed, or use utility classes */
-.inputField { /* Apply this class to the input if you want specific module styles */
+.amountLabel {
+    font-size: 1rem;
+    font-weight: 500;
+    color: #4a5568;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.inputField {
     width: 100%;
-    max-width: 300px;
+    max-width: 250px;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 5px;
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: #333;
-    display: block; /* Make it block */
-    margin: 0 auto 8px; /* Center and add margin below */
+    text-align: center;
 }
 
 .amountOptions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    justify-content: center; /* Center buttons */
+    justify-content: center;
 }
 
 .amountOptions button {
@@ -161,13 +177,49 @@
     padding: 6px 12px;
     border-radius: 15px;
     border: 1px solid #ddd;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
 
 .amountOptions button:hover {
     background-color: #e7e7e7;
+}
+
+/* Auto-Invest Section */
+.autoInvestOptions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.autoInvestToggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.autoInvestToggle label {
+    font-size: 0.9rem;
+    color: #666;
+    cursor: pointer;
+}
+
+.autoInvestOptions label {
+    font-size: 0.9rem;
+    color: #666;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.autoInvestOptions select {
+    padding: 6px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    color: #333;
+    width: 100%;
+    max-width: 200px;
 }
 
 /* Payment Methods Section */
@@ -178,25 +230,26 @@
 }
 
 .paymentMethods h4 {
-    font-size: 0.9rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #333;
     margin-bottom: 8px;
 }
 
 .paymentMethods label {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: #666;
     display: flex;
     align-items: center;
     gap: 8px;
     cursor: pointer;
 }
+
 .paymentMethods input[type="radio"] {
-     cursor: pointer;
+    cursor: pointer;
 }
 
-.paymentMethods img { /* Style for payment logos if used */
+.paymentMethods img {
     height: 20px;
 }
 
@@ -209,33 +262,31 @@
 }
 
 .tradeSummary p {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: #333;
     margin: 4px 0;
 }
 
-/* Action Button Styles (assuming redeemAction is the container) */
+/* Action Button Styles */
 .redeemAction {
-    display: flex; /* Use flex to easily center the button */
+    display: flex;
     justify-content: center;
-    margin-top: 1rem; /* Equivalent to mt-4 */
+    margin-top: 1rem;
 }
 
-/* --- Button Styles (Keep if specific to this page or not globally defined) --- */
-/* Add .btnPrimary, .btnSecondary if they aren't global */
 .btnPrimary {
     background-color: #F8B612;
     color: #fff;
     padding: 10px 20px;
     border: none;
     border-radius: 5px;
-    font-size: 0.9rem;
-    font-weight: 500; /* Added for consistency */
+    font-size: 1rem;
+    font-weight: 500;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    text-align: center; /* Ensure text is centered */
-    text-decoration: none; /* Remove underline if used as link */
-    display: inline-block; /* Behave like a button */
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
 }
 
 .btnPrimary:hover {
@@ -243,33 +294,11 @@
 }
 
 .btnPrimary:disabled {
-    background-color: #f8d074; /* Lighter shade when disabled */
+    background-color: #f8d074;
     cursor: not-allowed;
 }
 
-/* Example for btnSecondary if needed */
-.btnSecondary {
-    background-color: #e7e7e7;
-    color: #333;
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-weight: 500;
-    font-size: 0.8rem;
-    border: none;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    justify-content: center;
-    text-decoration: none;
-}
-
-.btnSecondary:hover {
-    background-color: #d5d5d5;
-}
-
-/* --- Utility Styles --- */
+/* Utility Styles */
 .positive {
     color: #28a745;
 }
@@ -278,116 +307,124 @@
     color: #dc3545;
 }
 
-.error { /* Style for error messages */
+.error {
     color: #dc3545;
-    font-size: 0.85rem;
+    font-size: 0.95rem;
     text-align: center;
     margin-bottom: 1rem;
 }
 
-
-/* --- Success Popup Styles --- */
+/* Success Popup Styles */
 .successPopup {
-    /* display: none; Replaced by conditional rendering */
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: #fff;
-    padding: 20px 30px; /* More padding */
+    padding: 20px 30px;
     border-radius: 8px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     text-align: center;
-    z-index: 1050; /* Ensure it's above navbar */
+    z-index: 1050;
     width: 90%;
     max-width: 350px;
     border: 1px solid #eee;
 }
 
 .successPopup h3 {
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     color: #28a745;
-    margin-top: 0; /* Remove default margin */
+    margin-top: 0;
     margin-bottom: 15px;
 }
 
 .successPopup p {
-    font-size: 0.9rem;
+    font-size: 1rem;
     color: #333;
     margin: 8px 0;
 }
 
-.successPopup button { /* Target button inside popup */
-     margin-top: 15px;
-     /* width: 100%; */ /* Removed to let button size naturally */
-     /* max-width: 150px; */ /* Removed */
-     padding: 8px 25px; /* Adjust padding */
+.successPopup button {
+    margin-top: 15px;
+    padding: 8px 25px;
 }
 
-
-/* --- Responsive Adjustments for Trade Page Content --- */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
     .trade {
         padding: 10px 3%;
     }
 
-    /* Adjust layout inside wallet balance card */
     .walletBalanceContent {
         flex-direction: column;
-        align-items: stretch; /* Stretch items to full width */
+        align-items: stretch;
         gap: 15px;
     }
+
     .balanceLeft, .balanceRight {
-       min-width: unset; /* Remove min-width */
-       text-align: center; /* Center text on mobile */
-    }
-     .balanceHeader {
-        justify-content: center; /* Center header items */
-    }
-    .walletBalance h2 {
-        font-size: 1.3rem; /* Slightly smaller */
-    }
-    .divider {
-        display: none; /* Hide divider on mobile */
+        min-width: unset;
+        text-align: center;
     }
 
-    /* Adjust trade form */
+    .balanceHeader {
+        justify-content: center;
+    }
+
+    .walletBalance h2 {
+        font-size: 1.5rem;
+    }
+
+    .divider {
+        display: none;
+    }
+
     .tradeToggle {
-        flex-direction: column; /* Stack radio buttons */
+        flex-direction: column;
         gap: 12px;
-        align-items: flex-start; /* Align radios left */
-        margin-left: auto; /* Push to center-ish */
+        align-items: flex-start;
+        margin-left: auto;
         margin-right: auto;
-        max-width: 200px; /* Limit width */
+        max-width: 200px;
+    }
+
+    .formGroup {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .amountLabel {
+        text-align: center;
     }
 
     .amountOptions {
-        justify-content: center; /* Keep buttons centered */
+        justify-content: center;
     }
 
     .inputField {
-        max-width: 100%; /* Allow full width */
+        max-width: 100%;
     }
 
     .paymentMethods {
-        align-items: flex-start; /* Align labels left */
+        align-items: flex-start;
         margin-left: auto;
         margin-right: auto;
-        max-width: 300px; /* Limit width */
+        max-width: 300px;
     }
 
-     .redeemAction .btnPrimary { /* Target the button inside */
-         width: 80%; /* Make button wider on mobile */
-         max-width: 300px;
-     }
+    .redeemAction .btnPrimary {
+        width: 80%;
+        max-width: 300px;
+    }
 
-     .successPopup {
-         padding: 15px 20px;
-     }
-     .successPopup h3 {
-         font-size: 1.1rem;
-     }
-     .successPopup p {
-         font-size: 0.85rem;
-     }
+    .successPopup {
+        padding: 15px 20px;
+    }
+
+    .successPopup h3 {
+        font-size: 1.2rem;
+    }
+
+    .successPopup p {
+        font-size: 0.9rem;
+    }
 }
