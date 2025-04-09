@@ -656,7 +656,7 @@ ul {
     background-color: #ffffff;
     padding: 40px;
     border-radius: 12px;
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 5px 20px #F8B612;
     max-width: 900px; /* Adjust max-width as needed */
     width: 100%;
 }
@@ -809,7 +809,7 @@ input[type=number]::-webkit-outer-spin-button {
     height: 100%;
     border-radius: 50%;
     /* Gradient set by JS */
-    background: conic-gradient(#333 0% 75%, #888 75% 100%); /* Default placeholder */
+    background: conic-gradient(#f0e0b0 0% 75%, #F8B612 75% 100%); /* Default placeholder */
     position: relative; /* Needed for pseudo-element */
 }
 
