@@ -286,7 +286,7 @@ export default function NavbarInternal() {
             >
                 {/* Main Navigation Links */}
                  <li><Link href="/dashboard" className={isActive('/dashboard') ? 'active' : ''} onClick={handleNavLinkClick}>Dashboard</Link></li>
-                 <li><Link href="/market" className={isActive('/market') ? 'active' : ''} onClick={handleNavLinkClick}>Market</Link></li>
+                 <li><Link href="/marketinternal" className={isActive('/marketinternal') ? 'active' : ''} onClick={handleNavLinkClick}>Market</Link></li>
                  <li><Link href="/trade" className={isActive('/trade') ? 'active' : ''} onClick={handleNavLinkClick}>Trade</Link></li>
                  <li><Link href="/wallet" className={isActive('/wallet') ? 'active' : ''} onClick={handleNavLinkClick}>Wallet</Link></li>
                  <li><Link href="/settings" className={isActive('/settings') ? 'active' : ''} onClick={handleNavLinkClick}>Settings</Link></li>
