@@ -29,7 +29,7 @@ export default function FooterInternal() {
                     <li><Link href="/dashboard">Home (Dashboard)</Link></li>
                     <li><Link href="/calculatorinternal">Calculator</Link></li>
                     <li><Link href="/marketinternal">Market</Link></li>
-                    <li><Link href="/aboutinternal">About</Link></li>
+                    <li><Link href="/about">About</Link></li>
                 </ul>
             </div>
             <div className="footer-section">
