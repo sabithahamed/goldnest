@@ -27,9 +27,9 @@ export default function FooterInternal() {
                 <ul>
                     {/* Update hrefs */}
                     <li><Link href="/dashboard">Home (Dashboard)</Link></li>
-                    <li><Link href="/calculator">Calculator</Link></li>
-                    <li><Link href="/market">Market</Link></li>
-                    <li><Link href="/about">About</Link></li>
+                    <li><Link href="/calculatorinternal">Calculator</Link></li>
+                    <li><Link href="/marketinternal">Market</Link></li>
+                    <li><Link href="/aboutinternal">About</Link></li>
                 </ul>
             </div>
             <div className="footer-section">
