@@ -1,4 +1,4 @@
-'use client'; // Required because we use hooks (useState, useEffect) for calculator logic
+'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import Navbar from '@/components/Navbar';
@@ -6,113 +6,112 @@ import Footer from '@/components/Footer';
 import Link from 'next/link';
 
 export default function CalculatorPage() {
-    // State for calculator inputs
-    const [frequency, setFrequency] = useState('monthly');
-    const [investmentAmount, setInvestmentAmount] = useState(5000);
-    const [investmentPeriod, setInvestmentPeriod] = useState(5);
-    const [returnRate, setReturnRate] = useState(12);
+  const [frequency, setFrequency] = useState('monthly');
+  const [investmentAmount, setInvestmentAmount] = useState(5000);
+  const [investmentPeriod, setInvestmentPeriod] = useState(5);
+  const [returnRate, setReturnRate] = useState(12);
 
-    // State for calculated outputs
-    const [totalInvested, setTotalInvested] = useState(0);
-    const [estimatedReturns, setEstimatedReturns] = useState(0);
-    const [totalValue, setTotalValue] = useState(0);
-    const [chartValue, setChartValue] = useState('Rs. 0');
-    const [investedPercent, setInvestedPercent] = useState(0);
+  const [totalInvested, setTotalInvested] = useState(0);
+  const [estimatedReturns, setEstimatedReturns] = useState(0);
+  const [totalValue, setTotalValue] = useState(0);
+  const [chartValue, setChartValue] = useState('Rs. 0');
+  const [investedPercent, setInvestedPercent] = useState(0);
 
-    const donutChartRef = useRef(null); // Ref for the chart div
+  const donutChartRef = useRef(null);
 
-    // Formatters (keep these simple for React, Intl is browser native)
-    const currencyFormatter = new Intl.NumberFormat('en-LK', { // Use LK locale?
-        style: 'currency',
-        currency: 'LKR',
-        maximumFractionDigits: 0
-    });
-    const currencyFormatterNoSymbol = new Intl.NumberFormat('en-LK', {
-        maximumFractionDigits: 0
-    });
-    const formatLargeValue = (value) => {
-        if (value >= 10000000) { // 1 Crore LKR = 10 Million
-             return `Rs. ${(value / 10000000).toFixed(2)} Cr`;
-        } else if (value >= 100000) { // 1 Lakh LKR = 0.1 Million
-             return `Rs. ${(value / 100000).toFixed(2)} L`;
-        } else {
-            return currencyFormatter.format(value);
-        }
-    };
+  const currencyFormatter = new Intl.NumberFormat('en-LK', {
+    style: 'currency',
+    currency: 'LKR',
+    maximumFractionDigits: 0
+  });
 
-    // Calculation Logic inside useEffect, triggered by state changes
-    useEffect(() => {
-        const P = Number(investmentAmount) || 0;
-        const t = Number(investmentPeriod) || 0;
-        const annualRatePercent = Number(returnRate) || 0;
+  const currencyFormatterNoSymbol = new Intl.NumberFormat('en-LK', {
+    maximumFractionDigits: 0
+  });
 
-        if (P <= 0 || t <= 0 || annualRatePercent <= 0) {
-            setTotalInvested(0);
-            setEstimatedReturns(0);
-            setTotalValue(0);
-            setChartValue('Rs. 0');
-            setInvestedPercent(0);
-            return;
-        }
+  const formatLargeValue = (value) => {
+    if (value >= 10000000) {
+      return `Rs. ${(value / 10000000).toFixed(2)} Cr`;
+    } else if (value >= 100000) {
+      return `Rs. ${(value / 100000).toFixed(2)} L`;
+    } else {
+      return currencyFormatter.format(value);
+    }
+  };
 
-        let n = 0;
-        let i = 0;
-        let currentTotalInvested = 0;
-        const annualRateDecimal = annualRatePercent / 100;
+  useEffect(() => {
+    const P = Number(investmentAmount) || 0;
+    const t = Number(investmentPeriod) || 0;
+    const annualRatePercent = Number(returnRate) || 0;
 
-        if (frequency === 'monthly') {
-            n = t * 12;
-            i = annualRateDecimal / 12;
-            currentTotalInvested = P * n;
-        } else { // yearly
-            n = t;
-            i = annualRateDecimal;
-            currentTotalInvested = P * n;
-        }
+    if (P <= 0 || t <= 0 || annualRatePercent <= 0) {
+      setTotalInvested(0);
+      setEstimatedReturns(0);
+      setTotalValue(0);
+      setChartValue('Rs. 0');
+      setInvestedPercent(0);
+      return;
+    }
 
-        let futureValue = 0;
-        if (i === 0) {
-            futureValue = P * n;
-        } else {
-            const term = (Math.pow(1 + i, n) - 1) / i;
-            futureValue = P * term * (1 + i); // Assuming SIP is invested at start of period? Standard formula often omits *(1+i)
-            // Using FV = P * [((1 + i)^n - 1) / i] might be more standard for end-of-period investments
-            // Let's stick to the formula used in the HTML script for consistency:
-             futureValue = P * ((Math.pow(1 + i, n) - 1) / i) * (1 + i);
-        }
+    let n = 0;
+    let i = 0;
+    let currentTotalInvested = 0;
+    const annualRateDecimal = annualRatePercent / 100;
 
-        const currentEstimatedReturns = futureValue - currentTotalInvested;
+    if (frequency === 'monthly') {
+      n = t * 12;
+      i = annualRateDecimal / 12;
+      currentTotalInvested = P * n;
+    } else {
+      n = t;
+      i = annualRateDecimal;
+      currentTotalInvested = P * n;
+    }
 
-        // Update State
-        setTotalInvested(currentTotalInvested);
-        setEstimatedReturns(Math.max(0, currentEstimatedReturns));
-        setTotalValue(futureValue);
-        setChartValue(formatLargeValue(futureValue));
+    let futureValue = 0;
+    if (i === 0) {
+      futureValue = P * n;
+    } else {
+      futureValue = P * ((Math.pow(1 + i, n) - 1) / i) * (1 + i);
+    }
 
-        let currentInvestedPercent = 0;
-        if (futureValue > 0) {
-            currentInvestedPercent = Math.max(0, Math.min(100, (currentTotalInvested / futureValue) * 100));
-        }
-        setInvestedPercent(currentInvestedPercent);
+    const currentEstimatedReturns = futureValue - currentTotalInvested;
 
-    }, [frequency, investmentAmount, investmentPeriod, returnRate]); // Dependencies
+    setTotalInvested(currentTotalInvested);
+    setEstimatedReturns(Math.max(0, currentEstimatedReturns));
+    setTotalValue(futureValue);
+    setChartValue(formatLargeValue(futureValue));
 
-    // Update donut chart background using ref
-     useEffect(() => {
-        if (donutChartRef.current) {
-            donutChartRef.current.style.background = `conic-gradient(
-                #ffc107 ${investedPercent.toFixed(2)}%, // Use theme color for invested
-                #e9ecef ${investedPercent.toFixed(2)}%   // Use light grey for returns
-            )`;
-        }
-     }, [investedPercent]);
+    let currentInvestedPercent = 0;
+    if (futureValue > 0) {
+      currentInvestedPercent = Math.max(0, Math.min(100, (currentTotalInvested / futureValue) * 100));
+    }
 
-    // Handlers for input changes
-    const handleAmountChange = (e) => setInvestmentAmount(e.target.value);
-    const handlePeriodChange = (e) => setInvestmentPeriod(e.target.value);
-    const handleRateChange = (e) => setReturnRate(e.target.value);
-    const handleFrequencyChange = (e) => setFrequency(e.target.value);
+    // Clamp for minimal visibility
+    const MIN_VISIBLE_PERCENT = 0.5;
+    if (currentInvestedPercent > 0 && currentInvestedPercent < MIN_VISIBLE_PERCENT)
+      currentInvestedPercent = MIN_VISIBLE_PERCENT;
+    if (currentInvestedPercent < 100 && currentInvestedPercent > (100 - MIN_VISIBLE_PERCENT))
+      currentInvestedPercent = 100 - MIN_VISIBLE_PERCENT;
 
+    setInvestedPercent(currentInvestedPercent);
+  }, [frequency, investmentAmount, investmentPeriod, returnRate]);
+
+  // ✅ Dynamically update donut chart
+  useEffect(() => {
+    if (donutChartRef.current) {
+      const invested = investedPercent.toFixed(2);
+      donutChartRef.current.style.background = `conic-gradient(
+        #f0e0b0 ${invested}%,
+        #F8B612 ${invested}%
+      )`;
+    }
+  }, [investedPercent]);
+
+  const handleAmountChange = (e) => setInvestmentAmount(e.target.value);
+  const handlePeriodChange = (e) => setInvestmentPeriod(e.target.value);
+  const handleRateChange = (e) => setReturnRate(e.target.value);
+  const handleFrequencyChange = (e) => setFrequency(e.target.value);
 
   return (
     <>
@@ -164,17 +163,18 @@ export default function CalculatorPage() {
             {/* Output Column */}
             <div className="calculator-outputs">
               <div className="chart-container">
-                {/* Donut chart ref */}
                 <div ref={donutChartRef} className="donut-chart">
                   <span className="chart-value">{chartValue}</span>
                 </div>
               </div>
+
               <div className="chart-legend">
-                 <ul>
-                    <li><span className="legend-dot invested" style={{backgroundColor: '#ffc107'}}></span> Invested amount</li>
-                    <li><span className="legend-dot returns" style={{backgroundColor: '#e9ecef'}}></span> Estimated Returns</li>
+                <ul>
+                  <li><span className="legend-dot invested" style={{ backgroundColor: '#f0e0b0' }}></span> Invested amount</li>
+                  <li><span className="legend-dot returns" style={{ backgroundColor: '#F8B612' }}></span> Estimated Returns</li>
                 </ul>
               </div>
+
               <div className="output-details">
                 <div className="output-row">
                   <span>Invested amount</span>
@@ -190,10 +190,11 @@ export default function CalculatorPage() {
                   <span className="output-value total-value">Rs <span id="total-value">{currencyFormatterNoSymbol.format(totalValue)}</span></span>
                 </div>
               </div>
-               {/* Link to invest page */}
+
               <Link href="/invest" className="cta-btn invest-now-btn">Invest now</Link>
             </div>
           </div>
+
           <p className="calculator-description">
             A Systematic Investment Plan (SIP) Calculator for Gold Returns helps estimate the future value of your gold investments based on periodic investments. Since gold prices fluctuate, the return rate varies.
           </p>
