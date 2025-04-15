@@ -1,7 +1,8 @@
 // backend/controllers/redeemController.js
 const User = require('../models/User');
-const { getGoldMarketSummary } = require('../utils/goldDataUtils'); // May need price for fee calculation? - Keep if needed later
-const { createNotification } = require('../services/notificationService'); // <<< Added notification service import
+const { getGoldMarketSummary } = require('../utils/goldDataUtils'); // Keep if needed later, though not used in this function currently
+const { createNotification } = require('../services/notificationService');
+const { updateGamificationOnAction } = require('../services/gamificationTriggerService'); // <<< Added gamification service import
 
 // --- Configuration ---
 const REDEMPTION_FEES = { // Example fees (can be more dynamic)
@@ -9,7 +10,7 @@ const REDEMPTION_FEES = { // Example fees (can be more dynamic)
     '5g': 250,  // Example fee for 5g coin
     '10g': 400, // Example fee for 10g coin
     'default': 500 // Fee for sizes not listed or for custom calc base
-    // Add fees for bars if needed
+    // Add fees for bars if needed: e.g., '20g': 600, '50g': 1000, '100g': 1500
 };
 
 const GRAMS_PER_ITEM = { // Map item size string to grams
@@ -22,7 +23,7 @@ const GRAMS_PER_ITEM = { // Map item size string to grams
 // Helper function for formatting currency - might move to utils
 const formatCurrency = (value) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(value);
 
-// Helper function for formatting dates (simple YYYY-MM-DD) - <<< Added
+// Helper function for formatting dates (simple YYYY-MM-DD)
 const formatDate = (dateString) => {
     if (!dateString) return 'N/A'; // Handle cases where date might be null/undefined
     try {
@@ -86,13 +87,13 @@ const requestRedemption = async (req, res) => {
             } else if (dayOfWeek === 0) { // If Sunday
                 estimatedDate.setDate(estimatedDate.getDate() + 1); // Move to Monday
             }
-            if (estimatedDate <= deliveryStartDate) estimatedDate.setDate(deliveryStartDate.getDate() + 4);
+            // Ensure delivery is at least next day even with weekend adjustments
+            if (estimatedDate <= deliveryStartDate) estimatedDate.setDate(deliveryStartDate.getDate() + 4); // Simple check to avoid same/past date
 
             return estimatedDate;
         };
         const estimatedDeliveryDate = calculateDeliveryDate();
         // --- End Delivery Date Calculation ---
-
 
         // --- Update Balances ---
         user.goldBalanceGrams -= goldRequired;
@@ -137,12 +138,12 @@ const requestRedemption = async (req, res) => {
         }
 
         // Save all changes (balances, transaction, optional default address)
-        const updatedUser = await user.save();
+        const updatedUser = await user.save(); // Save redemption first
 
         // --- Retrieve the Newly Created Transaction ---
         const newTransaction = updatedUser.transactions[updatedUser.transactions.length - 1];
 
-        // --- Create Notification --- <<< Added Section
+        // --- Create Notification ---
         try {
              await createNotification(userId, 'redemption_requested', {
                  title: 'Redemption Requested',
@@ -154,13 +155,22 @@ const requestRedemption = async (req, res) => {
              console.log(`Notification created for successful redemption request for user ${userId}, transaction ${newTransaction._id}`);
         } catch (notificationError) {
             // Log the notification error but don't fail the entire request
-            // The redemption itself was successful.
              console.error(`Failed to create notification for user ${userId} after redemption ${newTransaction._id}:`, notificationError);
              // Optionally: Add to a retry queue or specific logging system
         }
         // --- End Create Notification ---
 
+        // --- Trigger Gamification Update ---  <<< Added Section
+        // This runs in the background and does not block the response.
+        // Errors are logged but don't cause the redemption request to fail.
+        updateGamificationOnAction(userId, 'redemption', {
+            amountGrams: newTransaction.amountGrams // Pass the redeemed grams amount
+        }).catch(gamError => console.error(`Gamification update failed after redemption for user ${userId} (transaction ${newTransaction._id}):`, gamError));
+        // --- End Trigger Gamification Update ---
+
+
         // --- Success Response ---
+        // Send response immediately after saving and initiating background tasks
         res.status(201).json({ // 201 Created (request created)
             message: `Redemption request for ${itemDescription} submitted successfully.`,
             newGoldBalanceGrams: updatedUser.goldBalanceGrams,

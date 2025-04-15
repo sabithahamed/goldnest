@@ -7,8 +7,11 @@ const mongoose = require('mongoose');
 // @access  Private
 const getPriceAlerts = async (req, res) => {
     try {
-        // User object from 'protect' middleware already has the necessary data if populated correctly
-        // If not, fetch specifically: const user = await User.findById(req.user._id).select('priceAlerts');
+        // Assuming 'req.user' is populated by the 'protect' middleware
+        // If it only contains the ID, you might need to fetch again:
+        // const user = await User.findById(req.user._id).select('priceAlerts');
+        // res.json(user.priceAlerts || []);
+        // But if req.user is the full user document:
         res.json(req.user.priceAlerts || []);
     } catch (error) {
         console.error("Error getting price alerts:", error);
@@ -50,7 +53,7 @@ const addPriceAlert = async (req, res) => {
         user.priceAlerts.push(newAlert);
         await user.save();
 
-        // Return the newly added alert
+        // Return the newly added alert (the last one in the array)
         const addedAlert = user.priceAlerts[user.priceAlerts.length - 1];
         res.status(201).json(addedAlert);
 
@@ -64,29 +67,35 @@ const addPriceAlert = async (req, res) => {
 // @route   PUT /api/users/price-alerts/:id
 // @access  Private
 const updatePriceAlert = async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.params; // Alert ID
     const { isActive } = req.body; // Only allow toggling active status for now
-    const userId = req.user._id;
+    const userId = req.user._id; // User ID from token
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid alert ID format.' });
     }
-    if (typeof isActive !== 'boolean') {
-         return res.status(400).json({ message: 'Invalid isActive value provided.' });
+    // Validate isActive if it's provided
+    if (req.body.hasOwnProperty('isActive') && typeof isActive !== 'boolean') {
+         return res.status(400).json({ message: 'Invalid isActive value provided (must be true or false).' });
     }
 
     try {
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const alert = user.priceAlerts.id(id);
+        const alert = user.priceAlerts.id(id); // Find the subdocument by its _id
         if (!alert) return res.status(404).json({ message: 'Price alert not found.' });
 
-        alert.isActive = isActive;
-        // alert.lastTriggered = null; // Reset trigger time when toggling? Optional.
+        // Update fields if they are provided in the request body
+        if (req.body.hasOwnProperty('isActive')) {
+            alert.isActive = isActive;
+            // alert.lastTriggered = null; // Optional: Reset trigger time when toggling?
+        }
+        // Add other updatable fields here if needed in the future
+        // e.g., if (req.body.targetPriceLKRPerGram) { alert.targetPriceLKRPerGram = Number(req.body.targetPriceLKRPerGram); }
 
-        await user.save();
-        res.json(alert); // Return updated alert
+        await user.save(); // Save the parent document
+        res.json(alert); // Return updated alert subdocument
 
     } catch (error) {
         console.error("Error updating price alert:", error);
@@ -99,30 +108,52 @@ const updatePriceAlert = async (req, res) => {
 // @route   DELETE /api/users/price-alerts/:id
 // @access  Private
 const deletePriceAlert = async (req, res) => {
-    const { id } = req.params;
-    const userId = req.user._id;
+    const { id } = req.params; // ID of the alert to delete
+    const userId = req.user._id; // User ID from protect middleware
 
+    // Validate the ID format
     if (!mongoose.Types.ObjectId.isValid(id)) {
         return res.status(400).json({ message: 'Invalid alert ID format.' });
     }
 
     try {
         const user = await User.findById(userId);
-        if (!user) return res.status(404).json({ message: 'User not found' });
 
-         const alert = user.priceAlerts.id(id);
-         if (!alert) return res.status(404).json({ message: 'Price alert not found.' });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
 
-         alert.remove(); // Remove subdocument
+        // --- Start of Updated Logic ---
+
+        // Find the alert to ensure it exists before attempting removal
+        const alertExists = user.priceAlerts.some(alert => alert._id.toString() === id);
+
+        if (!alertExists) {
+            return res.status(404).json({ message: 'Price alert not found' });
+        }
+
+        // Filter out the alert to be deleted using standard array filter
+        // Keep only the alerts whose _id does NOT match the id from params
+        user.priceAlerts = user.priceAlerts.filter(alert => alert._id.toString() !== id);
+
+        // --- End of Updated Logic ---
+
+        // Save the user document with the modified priceAlerts array
         await user.save();
 
-        res.json({ message: 'Price alert deleted successfully.', deletedId: id });
+        // Respond with success message
+        res.status(200).json({ message: 'Price alert deleted successfully' });
 
     } catch (error) {
-        console.error("Error deleting price alert:", error);
-        res.status(500).json({ message: 'Server Error deleting price alert' });
+        console.error('Error deleting price alert:', error); // Log the full error
+        res.status(500).json({ message: 'Server error deleting price alert' });
     }
 };
 
 
-module.exports = { getPriceAlerts, addPriceAlert, updatePriceAlert, deletePriceAlert };
+module.exports = {
+    getPriceAlerts,
+    addPriceAlert,
+    updatePriceAlert,
+    deletePriceAlert
+};
