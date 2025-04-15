@@ -1,7 +1,9 @@
 // backend/controllers/sellController.js
 const User = require('../models/User');
 const { getGoldMarketSummary } = require('../utils/goldDataUtils'); // Need current price
+const { calculateSellFee } = require('../utils/feeUtils'); // Import sell fee calculator
 const { createNotification } = require('../services/notificationService'); // Added for notifications
+const { updateGamificationOnAction } = require('../services/gamificationTriggerService'); // Added for gamification
 
 // Helper function for formatting currency (can be moved to a utils file if used elsewhere)
 const formatCurrency = (value) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(value);
@@ -17,15 +19,17 @@ const sellGold = async (req, res) => {
     if (!amountGrams || isNaN(amountGrams) || Number(amountGrams) <= 0) {
         return res.status(400).json({ message: 'Invalid amount of grams to sell.' });
     }
-    // Add minimum sell amount if desired (e.g., 0.01 grams)
-    if (Number(amountGrams) < 0.001) {
+    // Add minimum sell amount if desired (e.g., 0.001 grams)
+    const requiredGrams = Number(amountGrams); // Use this consistent variable
+    if (requiredGrams < 0.001) {
         return res.status(400).json({ message: 'Minimum sell amount is 0.001 grams.' });
     }
 
     try {
         // --- Get Current Gold Price ---
         const marketSummary = getGoldMarketSummary(); // In a real app, fetch this dynamically if needed
-        const currentPricePerGram = marketSummary.latestPricePerGram; // Assuming this holds the *selling* price
+        // Assuming this holds the *selling* price (bid price) the platform offers
+        const currentPricePerGram = marketSummary.latestPricePerGram; // TODO: Distinguish between buy/sell price if needed
 
         if (!currentPricePerGram || currentPricePerGram <= 0) {
             console.error("Could not determine current gold selling price from market summary:", marketSummary);
@@ -38,31 +42,38 @@ const sellGold = async (req, res) => {
 
         // --- Check Sufficient Gold Balance ---
         // Use a small tolerance for floating point comparisons if necessary
-        const requiredGrams = Number(amountGrams);
-        if (user.goldBalanceGrams < requiredGrams) {
+        const tolerance = 1e-9; // Small tolerance for floating point precision issues
+        if (user.goldBalanceGrams < requiredGrams - tolerance) {
             return res.status(400).json({ message: `Insufficient gold balance. You have ${user.goldBalanceGrams.toFixed(4)}g, but tried to sell ${requiredGrams.toFixed(4)}g.` });
         }
 
         // --- Calculation ---
-        const proceedsLKR = requiredGrams * currentPricePerGram;
-        // Consider adding a small transaction fee/spread here in a real app
-        // Example: const fee = proceedsLKR * 0.005; // 0.5% fee
-        // const finalProceeds = proceedsLKR - fee;
+        const grossProceedsLKR = requiredGrams * currentPricePerGram;
+        const sellFeeLKR = calculateSellFee(grossProceedsLKR); // Calculate the fee based on gross proceeds
+        const netProceedsLKR = grossProceedsLKR - sellFeeLKR;   // Net amount user receives
+
+        // Ensure net proceeds are not negative (although unlikely with positive prices/fees)
+        if (netProceedsLKR < 0) {
+             console.error(`Calculated negative net proceeds (${netProceedsLKR}) for sell of ${requiredGrams}g. Gross: ${grossProceedsLKR}, Fee: ${sellFeeLKR}`);
+             return res.status(500).json({ message: 'Calculation error resulted in negative proceeds. Please contact support.' });
+        }
+
 
         // --- Update Balances (Atomic operation recommended in production - see notes below) ---
-        user.goldBalanceGrams -= requiredGrams;
-        user.cashBalanceLKR += proceedsLKR; // Add proceeds to cash wallet
+        // Ensure gold balance doesn't go negative due to floating point math
+        user.goldBalanceGrams = Math.max(0, user.goldBalanceGrams - requiredGrams);
+        user.cashBalanceLKR += netProceedsLKR; // Add NET proceeds to cash wallet
 
         // --- Add Transaction Record ---
         // Note: The transaction details are added *before* saving, so they are part of the atomic save.
         const transactionData = {
             type: 'sell_gold',
             amountGrams: requiredGrams, // Record grams sold
-            amountLKR: proceedsLKR, // Record LKR received (before fees if any)
+            amountLKR: netProceedsLKR, // Record NET LKR received by the user
             pricePerGram: currentPricePerGram, // Store the price used for this transaction
-            description: `Sold ${requiredGrams.toFixed(4)}g gold @ ~${currentPricePerGram.toFixed(0)} LKR/g`,
+            feeLKR: sellFeeLKR, // Store the calculated fee
+            description: `Sold ${requiredGrams.toFixed(4)}g gold @ ~${currentPricePerGram.toFixed(0)} LKR/g. Received ${formatCurrency(netProceedsLKR)} (after ${formatCurrency(sellFeeLKR)} fee)`,
             status: 'completed' // Selling is usually instant
-            // Consider adding fee details if applicable: feeLKR: fee
         };
         user.transactions.push(transactionData);
 
@@ -73,10 +84,12 @@ const sellGold = async (req, res) => {
         const newTransaction = updatedUser.transactions[updatedUser.transactions.length - 1];
 
         // --- Create notification ---
+        // Do this after successful save, but handle potential errors gracefully
         try {
             await createNotification(userId, 'transaction_sell', {
                 title: 'Sale Successful',
-                message: `You successfully sold ${newTransaction.amountGrams.toFixed(4)}g of gold for ${formatCurrency(newTransaction.amountLKR)}. Funds added to wallet.`,
+                // Use the net amount (amountLKR from the transaction) in the notification
+                message: `You successfully sold ${newTransaction.amountGrams.toFixed(4)}g of gold for ${formatCurrency(newTransaction.amountLKR)} (after fees). Funds added to wallet.`,
                 link: '/wallet', // Or perhaps '/transactions' or a specific transaction detail page
                 metadata: { transactionId: newTransaction._id } // Pass the ID of the saved transaction
             });
@@ -86,9 +99,18 @@ const sellGold = async (req, res) => {
             // Optionally, queue this notification for retry later
         }
 
+        // --- Trigger Gamification Update ---
+        // Also run this after successful save. Run asynchronously and log errors without failing the request.
+        updateGamificationOnAction(userId, 'sell', {
+            amountGrams: newTransaction.amountGrams, // Pass relevant data for gamification logic
+            netProceedsLKR: newTransaction.amountLKR // Pass net proceeds if needed by gamification
+        }).catch(gamError => console.error(`Gamification update failed after sell for user ${userId}:`, gamError));
+
+
         // --- Success Response ---
+        // Send the response immediately after saving and initiating async tasks (notification, gamification)
         res.status(200).json({
-            message: `Successfully sold ${requiredGrams.toFixed(4)}g of gold.`,
+            message: `Successfully sold ${requiredGrams.toFixed(4)}g of gold. ${formatCurrency(netProceedsLKR)} added to wallet after ${formatCurrency(sellFeeLKR)} fee.`,
             newGoldBalanceGrams: updatedUser.goldBalanceGrams,
             newCashBalanceLKR: updatedUser.cashBalanceLKR,
             transaction: newTransaction // Send back the details of the transaction just created
@@ -97,6 +119,9 @@ const sellGold = async (req, res) => {
     } catch (error) {
         console.error("Error during gold sell:", error);
         // More specific error handling can be added here (e.g., validation errors from Mongoose)
+        if (error.name === 'ValidationError') {
+             return res.status(400).json({ message: "Validation Error", details: error.message });
+        }
         res.status(500).json({ message: 'Server Error during gold sell process.' });
     }
 };
@@ -107,13 +132,13 @@ module.exports = { sellGold };
 Notes on Atomicity:
 In a high-concurrency production environment, the sequence of:
 1. Check balance
-2. Calculate proceeds
+2. Calculate proceeds & fee
 3. Update balance
 4. Save user
 needs to be atomic to prevent race conditions (e.g., two sell requests processing simultaneously using the same initial balance).
 Strategies:
-a) Pessimistic Locking: Lock the user document before reading/writing.
-b) Optimistic Locking: Use Mongoose's versioning (`__v` field) to detect concurrent modifications and retry if necessary.
+a) Pessimistic Locking: Lock the user document before reading/writing. (e.g., using `findByIdAndUpdate` with specific options or transaction locks).
+b) Optimistic Locking: Use Mongoose's versioning (`__v` field) to detect concurrent modifications and retry if necessary. Mongoose does this implicitly if you fetch then save, but explicit checks might be needed for retries.
 c) Database Transactions: If using a database that supports transactions (like MongoDB replica sets/sharded clusters starting v4.0), wrap the find, update, and save operations within a transaction. This is generally the most robust approach.
-The current code doesn't implement these, assuming lower concurrency for simplicity.
+The current code relies on Mongoose's implicit versioning during the `save()` but doesn't implement explicit retries or database transactions, assuming lower concurrency for simplicity.
 */

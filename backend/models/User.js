@@ -7,25 +7,22 @@ const crypto = require('crypto');
 const transactionSchema = new mongoose.Schema({
   type: {
     type: String,
-    // Updated enum to include 'redemption' explicitly, though it was likely implied before
-    // Also includes 'sell_gold' which seems relevant
+    // Enum includes all relevant types identified previously
     enum: ['investment', 'redemption', 'bonus', 'fee', 'deposit', 'withdrawal', 'sell_gold'],
     required: true
   },
   amountGrams: { type: Number }, // Optional: Grams involved (investment, redemption, sell_gold)
   amountLKR: { type: Number },   // Optional: Value in LKR (investment, deposit, withdrawal, sell_gold, fee)
+  feeLKR: { type: Number, default: 0 }, // +++ ADDED: Store calculated fee for the transaction +++
   date: { type: Date, default: Date.now }, // Date the transaction was initiated/recorded
   description: { type: String }, // General description or notes
   status: {
     type: String,
-    // Updated enum with more detailed statuses, especially for redemption
+    // Using the comprehensive enum from the original 'old code'
     enum: ['pending', 'processing', 'shipped', 'delivered', 'completed', 'failed', 'cancelled'],
-    // Default depends on the typical flow. 'completed' for instant things like bonuses,
-    // 'pending' might be better for actions requiring external steps (deposit confirmation, redemption shipping).
-    // Let's keep 'completed' as per original, but acknowledge 'pending' might be suitable for some types.
-    default: 'completed'
+    default: 'completed' // Keep default as per original, adjust if needed per transaction type logic elsewhere
   },
-  relatedRedemptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Redemption' }, // Link if using a separate Redemption model
+  relatedRedemptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Redemption' }, // Link if using a separate Redemption model (Confirmed presence)
 
   // --- Fields specific to redemption or potentially sell_gold (if shipped) transaction types ---
   shippingAddress: { // Store address used for this specific shipment if applicable
@@ -39,20 +36,22 @@ const transactionSchema = new mongoose.Schema({
       phone: String
   },
   itemDescription: String, // e.g., "1 x 5g Gold Coin", "Gold Sale Confirmation"
-  trackingNumber: String,   // To be added later by an admin or automated process for shipments
+  trackingNumber: String,   // To be added later by an admin or automated process for shipments (Confirmed presence)
   estimatedDeliveryDate: Date // New field for estimated delivery date for shipments
 });
 
 
 // --- Auto Payment Sub-Schema ---
 const autoPaymentSchema = new mongoose.Schema({
-  _id: { type: mongoose.Schema.Types.ObjectId, required: true, auto: true },
-  frequency: {
-    type: String,
-    enum: ['daily', 'weekly', 'monthly', 'yearly'],
-    required: true
-  },
-  amountLKR: { type: Number, required: true, min: 100 }
+    _id: { type: mongoose.Schema.Types.ObjectId, required: true, auto: true },
+    frequency: {
+        type: String,
+        enum: ['daily', 'weekly', 'monthly'], // Updated: Removed 'yearly'
+        required: true
+    },
+    amountLKR: { type: Number, required: true, min: 100 },
+    dayOfMonth: { type: Number, min: 1, max: 28 }, // Optional: For monthly frequency (Max 28 to avoid issues with shorter months)
+    // Add nextRunDate, isActive etc. for a full implementation
 });
 
 // --- Default Shipping Address Sub-Schema ---
@@ -91,12 +90,12 @@ const userSchema = new mongoose.Schema({
   goldBalanceGrams: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative gold
   cashBalanceLKR: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative cash
 
-  transactions: [transactionSchema], // Array of transactions, including redemptions
+  transactions: [transactionSchema], // Array of transactions, including redemptions (using the updated schema)
 
   defaultShippingAddress: shippingAddressSchema, // Store user's preferred default shipping address
 
   automaticPayments: {
-    type: [autoPaymentSchema],
+    type: [autoPaymentSchema], // Reference the updated autoPaymentSchema
     default: []
   },
 
@@ -111,8 +110,12 @@ const userSchema = new mongoose.Schema({
     default: {}
   },
   starCount: { type: Number, default: 0 }, // New field for stars
-  // Optional: Track completed challenges if needed for complex reward logic
-  // completedChallengeIds: { type: [String], default: [] },
+  // Store IDs of challenges completed (potentially with completion date for resets)
+  // Simple approach: Just store the ID once completed
+  completedChallengeIds: { type: [String], default: [] },
+  // Advanced: Store as object { challengeId: 'CHALLENGE_ID', completedAt: Date, claimedAt: Date }
+  // Let's stick to the simple array of IDs for now.
+
 
   // +++ NEW: Price Alerts +++
   priceAlerts: [priceAlertSchema],

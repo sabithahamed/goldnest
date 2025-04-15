@@ -1,6 +1,5 @@
 // backend/server.js
 
-
 // Load environment variables from .env file
 const dotenv = require('dotenv');
 dotenv.config(); // Load environment variables
@@ -17,10 +16,12 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const investmentRoutes = require('./routes/investmentRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const gamificationRoutes = require('./routes/gamificationRoutes');
 const marketRoutes = require('./routes/marketRoutes');
 const walletRoutes = require('./routes/walletRoutes');     // Import wallet routes
 const sellRoutes = require('./routes/sellRoutes');         // Import sell routes
-const redeemRoutes = require('./routes/redeemRoutes');     // Import redeem routes
+// const redeemRoutes = require('./routes/redeemRoutes');     // REMOVED old redeem routes import
+const redemptionRoutes = require('./routes/redemptionRoutes'); // ADDED: Import redemption routes
 const notificationRoutes = require('./routes/notificationRoutes'); // Import notification routes
 const userPreferenceRoutes = require('./routes/userPreferenceRoutes'); // Import user preference routes
 const priceAlertRoutes = require('./routes/priceAlertRoutes'); // Import price alert routes
@@ -30,7 +31,7 @@ connectDB();
 
 // Initialize and start cron jobs (e.g., for price alerts, notifications)
 // This line executes the code in scheduler.js, setting up any defined cron jobs
-require('./scheduler'); // <-- ADDED LINE
+require('./scheduler'); // <-- Existing line
 
 // Initialize Express app
 const app = express();
@@ -46,10 +47,12 @@ app.use('/api/users/preferences', userPreferenceRoutes); // Mount user preferenc
 app.use('/api/users/price-alerts', priceAlertRoutes); // Mount price alerts under /users
 app.use('/api/investments', investmentRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/gamification', gamificationRoutes);
 app.use('/api/market', marketRoutes);
 app.use('/api/wallet', walletRoutes);         // Mount wallet routes
 app.use('/api/sell', sellRoutes);             // Mount sell routes
-app.use('/api/redeem', redeemRoutes);         // Mount redeem routes
+// app.use('/api/redeem', redeemRoutes);         // REMOVED old redeem routes mount
+app.use('/api/redemptions', redemptionRoutes);  // ADDED: Mount redemption routes
 app.use('/api/notifications', notificationRoutes); // Mount notification routes
 
 // Basic test route
