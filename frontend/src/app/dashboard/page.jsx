@@ -104,10 +104,10 @@ const TROY_OZ_TO_GRAMS = 31.1034768;
 export default function DashboardPage() {
   // --- State ---
   const [userData, setUserData] = useState(null);
-  const [marketData, setMarketData] = useState(null);
+  const [marketData, setMarketData] = useState(null); // Will now contain new fields
   const [aiOverview, setAiOverview] = useState('');
   const [aiTrend, setAiTrend] = useState('');
-  const [aiForecast, setAiForecast] = useState('');
+  const [aiForecast, setAiForecast] = useState(''); // This is the *AI* forecast
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -131,9 +131,10 @@ export default function DashboardPage() {
 
     const fetchDashboardData = async () => {
       try {
+        // Fetch user data, market summary (now with predictions/trends), and AI insights
         const [userRes, marketRes, overviewRes, trendRes, forecastRes] = await Promise.all([
           axios.get(`${backendUrl}/api/users/me`, config),
-          axios.get(`${backendUrl}/api/market/gold-summary`),
+          axios.get(`${backendUrl}/api/market/gold-summary`), // Expects new fields here
           axios.get(`${backendUrl}/api/ai/dashboard-overview`, config),
           axios.get(`${backendUrl}/api/ai/trend-summary`),
           axios.get(`${backendUrl}/api/ai/monthly-forecast`),
@@ -144,21 +145,21 @@ export default function DashboardPage() {
         }
 
         setUserData(userRes.data);
-        setMarketData(marketRes.data);
+        setMarketData(marketRes.data); // Contains latestPricePerGram, previousDaysData, priceChangePercent, weeklyChangePercent, monthlyChangePercent, predictedTomorrowPricePerGram, predictedTomorrowChangePercent, trend, latestDate etc.
         setAiOverview(
           overviewRes.data?.overview ||
-            'A significant improvement from the past month which helped improve your average price.'
+            'AI overview is currently processing. Check back soon.'
         );
         setAiTrend(
           trendRes.data?.summary ||
-            'Gold prices are rising. Consider buying now as prices may increase by 3% tomorrow.'
+            'AI trend summary is currently unavailable.'
         );
-        setAiForecast(forecastRes.data?.forecast || '2.1%');
+        setAiForecast(forecastRes.data?.forecast || 'N/A');
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
         setError(err.response?.data?.message || err.message || 'Failed to load dashboard data.');
         if (err.response?.status === 401) {
-          localStorage.clear();
+          localStorage.removeItem('userToken');
           router.push('/');
         }
       } finally {
@@ -167,7 +168,7 @@ export default function DashboardPage() {
     };
 
     fetchDashboardData();
-  }, [router]);
+  }, [router]); // Dependency on router
 
   // Fetch alerts
   useEffect(() => {
@@ -188,69 +189,51 @@ export default function DashboardPage() {
         setAlerts(data.notifications || []);
       } catch (err) {
         console.error('Error fetching alerts:', err.response?.data?.message || err.message);
-        setAlertsError('Failed to load alerts.');
+        if (err.response?.status !== 401) {
+             setAlertsError('Failed to load alerts.');
+        }
       } finally {
         setLoadingAlerts(false);
       }
     };
 
-    fetchAlerts();
-  }, []);
+    fetchAlerts(); // Fetch regardless of main data load status for now
 
-  // --- Derived Data ---
-  const goldBalanceGrams = userData?.goldBalanceGrams ?? 6.27;
-  const currentPricePerGram = marketData?.latestPricePerGram || 21567.5;
-  const goldValueLKR = goldBalanceGrams * currentPricePerGram;
+  }, []); // Keep empty dependency array as specified in user prompt
+
+
+  // --- Derived Data (Use backend data where applicable) ---
+  const goldBalanceGrams = userData?.goldBalanceGrams ?? 0;
+  const currentGoldValueLKR = userData?.currentGoldValueLKR ?? 0; // From backend
+  const overallProfitLKR = userData?.overallProfitLKR ?? 0;       // From backend
+  const overallProfitPercent = userData?.overallProfitPercent ?? 0; // From backend
+  const avgPurchasePrice = userData?.averagePurchasePricePerGram ?? 0; // From backend
 
   const lastPurchase = useMemo(
     () =>
       (userData?.transactions || [])
-        .filter((t) => t.type === 'investment')
-        .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || {
-        amountGrams: 0.124,
-        amountLKR: 3023.0,
-        date: '2025-03-12',
-      },
+        .filter((t) => t.type === 'investment' && t.status === 'completed')
+        .sort((a, b) => new Date(b.date) - new Date(a.date))[0] || null,
     [userData?.transactions]
   );
 
-  const overallProfit = goldValueLKR * 0.078;
-  const avgPurchasePrice = 4532.76;
+  // --- V V V Get NEW values from marketData V V V ---
+  const currentPricePerGram = marketData?.latestPricePerGram || 0; // Use 0 if not loaded
+  const dailyChangePercent = marketData?.priceChangePercent ?? 0; // This is daily
+  const weeklyChangePercent = marketData?.weeklyChangePercent ?? 0;
+  const monthlyChangePercent = marketData?.monthlyChangePercent ?? 0;
+  const predictedTomorrowPrice = marketData?.predictedTomorrowPricePerGram ?? 0;
+  const predictedTomorrowChange = marketData?.predictedTomorrowChangePercent ?? 0; // Prediction change %
+  const marketTrend = marketData?.trend ?? 'stable'; // 'up', 'down', or 'stable'
+  // --- ^ ^ ^ END Get NEW values ^ ^ ^ ---
 
   // --- Gamification Data ---
-  const challengeProgressMap = useMemo(
+   const challengeProgressMap = useMemo(
     () => userData?.challengeProgress || {},
     [userData?.challengeProgress]
   );
-  const activeChallenges = useMemo(
-    () =>
-      userData?.gamificationDefs?.challenges || [
-        {
-          id: 'invest_5000',
-          name: 'Invest a total of Rs 5,000',
-          goal: 5000,
-          currentProgress: 2279,
-          starsAwarded: 1,
-          rewardText: 'Bronze Investor Badge',
-          ctaText: 'Invest Now',
-          ctaLink: '/trade',
-          icon: 'fa-trophy',
-          unit: 'LKR',
-        },
-        {
-          id: 'invest_1000_week',
-          name: 'Invest Rs 1,000 in a week',
-          goal: 1000,
-          currentProgress: 1000,
-          starsAwarded: 1,
-          rewardText: '0.1g Bonus Gold',
-          rewardType: 'claimable',
-          ctaText: 'View Reward',
-          ctaLink: '/claim-reward',
-          icon: 'fa-check-circle',
-          unit: 'LKR',
-        },
-      ],
+   const activeChallenges = useMemo(
+    () => userData?.gamificationDefs?.challenges || [],
     [userData?.gamificationDefs]
   );
 
@@ -265,6 +248,7 @@ export default function DashboardPage() {
   // --- Render Logic ---
   const renderLoadingSkeleton = () => (
     <div className={styles.dashboard}>
+      {/* Top Row Skeleton */}
       <div className={`${styles.dashboardRow} ${styles.topRow}`}>
         <PlaceholderCard>
           <PlaceholderTitle width="w-1/3" />
@@ -296,18 +280,30 @@ export default function DashboardPage() {
           <div className="animate-pulse space-y-4 p-4">
             <PlaceholderText width="w-1/4" height="h-5" />
             <PlaceholderText width="w-3/4" height="h-8" />
-            <div className="space-y-2">
-              <PlaceholderText width="w-full" />
-              <PlaceholderText width="w-full" />
-              <PlaceholderText width="w-full" />
+            <div className="space-y-2 mb-3">
+                <PlaceholderText width="w-full" height="h-3"/>
+                <PlaceholderText width="w-full" height="h-3"/>
+                <PlaceholderText width="w-full" height="h-3"/>
             </div>
-            <PlaceholderText width="w-full" height="h-10" />
+            <div className="space-y-2 mb-3">
+                 <PlaceholderText width="w-1/3" height="h-4" />
+                 <PlaceholderText width="w-1/2" height="h-4" />
+            </div>
+             <div className="space-y-2 mb-3">
+                 <PlaceholderText width="w-1/3" height="h-4" />
+                 <PlaceholderText width="w-1/2" height="h-4" />
+            </div>
+            <div className="space-y-2 mb-3">
+                <PlaceholderText width="w-full" height="h-3" />
+            </div>
+            <PlaceholderText width="w-full" height="h-10" /> {/* AI Insight Placeholder */}
             <div className="flex justify-end mt-4">
               <PlaceholderText width="w-1/4" height="h-8" />
             </div>
           </div>
         </PlaceholderCard>
       </div>
+      {/* Middle Row Skeleton */}
       <div className={`${styles.dashboardRow} ${styles.middleRow}`}>
         <PlaceholderCard>
           <div className="p-4 flex flex-col items-center sm:flex-row sm:justify-between">
@@ -319,6 +315,7 @@ export default function DashboardPage() {
           </div>
         </PlaceholderCard>
       </div>
+      {/* Bottom Row Skeleton */}
       <div className={`${styles.dashboardRow} ${styles.bottomRow}`}>
         <PlaceholderCard>
           <PlaceholderTitle width="w-1/2" className="ml-4 mt-4" />
@@ -358,6 +355,14 @@ export default function DashboardPage() {
         <NavbarInternal />
         <div className="p-10 text-center text-red-500 card mx-auto my-10 max-w-md">
           Error: {error}
+          {(error.includes('load dashboard data') || error.includes('essential user or market data')) && (
+            <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+                Retry
+            </button>
+          )}
         </div>
         <FooterInternal />
       </>
@@ -367,7 +372,13 @@ export default function DashboardPage() {
       <>
         <NavbarInternal />
         <div className="p-10 text-center text-orange-600 card mx-auto my-10 max-w-md">
-          Could not load dashboard data. Please try again later.
+          Could not load essential dashboard data. Please try again later or contact support.
+           <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+                Retry
+            </button>
         </div>
         <FooterInternal />
       </>
@@ -380,7 +391,7 @@ export default function DashboardPage() {
       <section className={styles.dashboard}>
         {/* Top Row */}
         <div className={`${styles.dashboardRow} ${styles.topRow}`}>
-          {/* Gold Holdings Card */}
+          {/* Gold Holdings Card (Remains Unchanged) */}
           <div className={styles.card}>
             <h3>Your Gold Holdings</h3>
             <div className={styles.goldHoldings}>
@@ -391,20 +402,22 @@ export default function DashboardPage() {
                     <div>
                       <p>Total Owned</p>
                       <h2>{formatGrams(goldBalanceGrams)}</h2>
-                      <p className={styles.highlight}>{formatCurrency(goldValueLKR)}</p>
+                      <p className={styles.highlight}>{formatCurrency(currentGoldValueLKR)}</p>
                     </div>
                   </div>
                   <div className={styles.aiInsight}>
-                    <span className={styles.aiLabel}>✨ AI Insight</span>
-                    <p>{aiOverview}</p>
+                    <span className={styles.aiLabel}>✨ AI Overview</span>
+                    <p>{aiOverview || 'Loading AI insight...'}</p>
                   </div>
                 </div>
                 <div className={styles.detailsSection}>
                   <div className={styles.profit}>
                     <p>Overall Profit</p>
                     <h4>
-                      {formatCurrency(overallProfit)}{' '}
-                      <span className={styles.profitPercentage}>+7.8%</span>
+                      {formatCurrency(overallProfitLKR)}{' '}
+                      <span className={`${styles.profitPercentage} ${overallProfitLKR >= 0 ? styles.positive : styles.negative}`}>
+                           {overallProfitLKR >= 0 ? '+' : ''}{overallProfitPercent.toFixed(1)}%
+                      </span>
                     </h4>
                   </div>
                   <div className={styles.averagePrice}>
@@ -415,13 +428,11 @@ export default function DashboardPage() {
                     <p>Your last purchase</p>
                     <h4>
                       {lastPurchase
-                        ? `${formatGrams(lastPurchase.amountGrams)} (${formatCurrency(
-                            lastPurchase.amountLKR
-                          )})`
+                        ? `${formatGrams(lastPurchase.amountGrams)} (${formatCurrency(lastPurchase.amountLKR)})`
                         : 'N/A'}
                     </h4>
                     <p className={styles.date}>
-                      {lastPurchase ? formatDate(lastPurchase.date) : 'N/A'}
+                      {lastPurchase ? formatDate(lastPurchase.date) : ''}
                     </p>
                   </div>
                 </div>
@@ -432,7 +443,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Live Price Card */}
+          {/* --- V V V Live Price Card - UPDATED V V V --- */}
           <div className={styles.card}>
             <h3>
               Gold Live Price <span className={styles.carat}>24 Carats</span>
@@ -444,94 +455,102 @@ export default function DashboardPage() {
                     <i className="fas fa-clock"></i>
                     <p>Today</p>
                     <p className={styles.date}>
-                      {marketData.latestDate ? formatDate(marketData.latestDate) : '20th March 2025'}
+                      {/* Use marketData.latestDate */}
+                      {marketData.latestDate ? formatDate(marketData.latestDate) : 'Loading...'}
                     </p>
                   </div>
+                  {/* Use marketData.latestPricePerGram */}
                   <h2 className={styles.currentPrice}>{formatCurrency(currentPricePerGram)} /g</h2>
                   <div className={styles.recentPrices}>
-                    {(marketData.previousDaysData?.slice(-3).reverse() || [
-                      { date: '2025-03-18', pricePerOz: 24500 * TROY_OZ_TO_GRAMS },
-                      { date: '2025-03-19', pricePerOz: 24750 * TROY_OZ_TO_GRAMS },
-                      { date: '2025-03-20', pricePerOz: 25000 * TROY_OZ_TO_GRAMS },
-                    ]).map((day, idx) => (
+                    {/* Use marketData.previousDaysData */}
+                    {(marketData.previousDaysData?.length > 0 ? marketData.previousDaysData.slice(-3).reverse() : []).map((day, idx) => (
                       <div key={idx} className={styles.recentPriceItem}>
                         <p>{formatDate(day.date)}</p>
-                        <span>{formatCurrency(day.pricePerOz / TROY_OZ_TO_GRAMS)} /g</span>
+                        {/* Use pricePerGram directly if available, else calculate */}
+                        <span>{formatCurrency(day.pricePerGram || (day.pricePerOz ? day.pricePerOz / TROY_OZ_TO_GRAMS : 0))} /g</span>
                       </div>
                     ))}
+                    {!marketData.previousDaysData?.length && (
+                         <div className={styles.recentPriceItem}>
+                            <p className='text-gray-400'>No recent data</p>
+                            <span></span>
+                         </div>
+                    )}
                   </div>
                 </div>
                 <div className={styles.trendSection}>
                   <div className={styles.trend}>
                     <div className={styles.trendHeader}>
                       <i className="fas fa-chart-line"></i>
-                      <p
-                        className={`${styles.priceChange} ${
-                          marketData.trend === 'up'
-                            ? styles.positive
-                            : marketData.trend === 'down'
-                            ? styles.negative
-                            : ''
-                        }`}
-                      >
-                        {marketData.priceChangePercent?.toFixed(1) || 2.4}%
-                        <i
-                          className={`fas fa-arrow-${
-                            marketData.trend === 'up'
-                              ? 'up'
-                              : marketData.trend === 'down'
-                              ? 'down'
-                              : 'right'
-                          }`}
-                        ></i>
+                      {/* Use marketData daily change % and trend */}
+                      <p className={`${styles.priceChange} ${dailyChangePercent >= 0 ? styles.positive : styles.negative}`}>
+                        {dailyChangePercent >= 0 ? '+' : ''}{dailyChangePercent.toFixed(1)}%
+                        <i className={`fas fa-arrow-${marketTrend === 'up' ? 'up' : marketTrend === 'down' ? 'down' : 'right'}`}></i>
                       </p>
                     </div>
                     <div className={styles.trendMetrics}>
+                      {/* --- Use new weekly % --- */}
                       <div className={styles.trendMetric}>
                         <p>This Week</p>
-                        <span className={styles.positive}>+5.2%</span>
+                        <span className={weeklyChangePercent >= 0 ? styles.positive : styles.negative}>
+                          {weeklyChangePercent >= 0 ? '+' : ''}{weeklyChangePercent.toFixed(1)}%
+                        </span>
                       </div>
+                      {/* --- Use new monthly % --- */}
                       <div className={styles.trendMetric}>
                         <p>This Month</p>
-                        <span className={styles.positive}>+8.1%</span>
+                        <span className={monthlyChangePercent >= 0 ? styles.positive : styles.negative}>
+                           {monthlyChangePercent >= 0 ? '+' : ''}{monthlyChangePercent.toFixed(1)}%
+                        </span>
                       </div>
                     </div>
                     <div className={styles.prediction}>
+                      {/* --- Use new predicted values --- */}
                       <p>
-                        Predicted Tomorrow: <span>Rs. 25,750.00 /g (+3%)</span>
+                        Predicted Tomorrow:{' '}
+                        <span>
+                            {predictedTomorrowPrice > 0
+                             ? `${formatCurrency(predictedTomorrowPrice)} /g (${predictedTomorrowChange >= 0 ? '+' : ''}${predictedTomorrowChange.toFixed(1)}%)`
+                             : <span className='text-gray-500'>N/A</span>
+                            }
+                        </span>
                       </p>
                     </div>
                     <div className={styles.aiInsight}>
-                      <span className={styles.aiLabel}>✨ AI Insight</span>
+                      <span className={styles.aiLabel}>✨ AI Trend</span>
                       <p>
-                        {aiTrend} <Link href="/market" className={styles.aiLink}>Learn More</Link>
+                        {aiTrend || 'Loading AI trend...'} {/* Display AI trend */}
+                         {/* Link to internal market page */}
+                        {aiTrend && <Link href="/marketinternal" className={styles.aiLink}>Learn More</Link>}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
-              <Link href="/market" className={`${styles.btnSecondary} ${styles.seeMore}`}>
+              {/* Link to internal market page */}
+              <Link href="/marketinternal" className={`${styles.btnSecondary} ${styles.seeMore}`}>
                 See Full History <i className="fas fa-arrow-right"></i>
               </Link>
             </div>
           </div>
+           {/* --- ^ ^ ^ END Live Price Card - UPDATED ^ ^ ^ --- */}
         </div>
 
-        {/* Middle Row */}
-        <div className={`${styles.dashboardRow} ${styles.middleRow}`}>
-          <div className={`${styles.card} ${styles.ctaCard}`}>
-            <h3>Buy your gold now with just 2 clicks!</h3>
-            <p>
-              <span className={styles.aiLabel}>✨</span> Trend shows potential growth according to
-              next month: <span className={styles.highlight}>{aiForecast}</span>.
-            </p>
-            <Link href="/trade" className={styles.btnPrimary}>
-              Buy Gold
-            </Link>
-          </div>
-        </div>
+        {/* Middle Row (Updated for AI Forecast clarity) */}
+         <div className={`${styles.dashboardRow} ${styles.middleRow}`}>
+             <div className={`${styles.card} ${styles.ctaCard}`}>
+                 <h3>Buy your gold now with just 2 clicks!</h3>
+                 <p>
+                     {/* Display separate AI forecast here */}
+                     <span className={styles.aiLabel}>✨ AI Forecast</span> Trend shows potential growth next month: <span className={styles.highlight}>{aiForecast !== 'N/A' ? aiForecast : 'Loading...'}</span>.
+                 </p>
+                 <Link href="/trade" className={styles.btnPrimary}>
+                     Buy Gold
+                 </Link>
+             </div>
+         </div>
 
-        {/* Bottom Row */}
+        {/* Bottom Row (Gamification, Alerts, Redeem - Remain Unchanged) */}
         <div className={`${styles.dashboardRow} ${styles.bottomRow}`}>
           {/* Gamification Card */}
           <div className={styles.card}>
@@ -539,20 +558,23 @@ export default function DashboardPage() {
             {activeChallenges.length > 0 ? (
               <div className={styles.gamification}>
                 {activeChallenges.slice(0, 2).map((challenge) => {
-                  const currentProgress =
-                    challengeProgressMap[challenge.id] || challenge.currentProgress || 0;
-                  const goal = challenge.goal || 1;
-                  const progressPercent =
-                    goal > 0 ? Math.min(100, (currentProgress / goal) * 100) : currentProgress > 0 ? 100 : 0;
+                  if (!challenge || typeof challenge.goal !== 'number') return null;
+                  const currentProgress = challengeProgressMap[challenge.id] || 0;
+                  const goal = challenge.goal;
+                  const progressPercent = goal > 0 ? Math.min(100, (currentProgress / goal) * 100) : (currentProgress > 0 ? 100 : 0);
                   const isCompleted = currentProgress >= goal;
                   const isClaimed = challengeProgressMap[`${challenge.id}_claimed`] === true;
                   const canClaim = isCompleted && challenge.rewardType === 'claimable' && !isClaimed;
                   const needed = Math.max(0, goal - currentProgress);
-                  const progressText = isCompleted
-                    ? 'Completed!'
-                    : `${
-                        challenge.unit === 'LKR' ? formatCurrency(needed) : needed.toFixed(0)
-                      } ${challenge.unit || ''} more`;
+
+                  let progressText = 'Error calculating progress';
+                    if (isCompleted) {
+                        progressText = 'Completed!';
+                    } else if (goal > 0) {
+                        progressText = `${challenge.unit === 'LKR' ? formatCurrency(needed) : needed.toFixed(0)} ${challenge.unit || ''} more`;
+                    } else {
+                        progressText = 'Goal reached!';
+                    }
                   const iconClass = `fas ${isCompleted ? 'fa-check-circle' : challenge.icon || 'fa-trophy'}`;
 
                   return (
@@ -562,10 +584,10 @@ export default function DashboardPage() {
                       data-status={isCompleted ? 'completed' : 'incomplete'}
                     >
                       <Link href="/gamification" className={styles.progressLink}>
-                        <i className={`${iconClass} ${isCompleted ? 'text-green-500' : ''}`}></i>
+                        <i className={`${iconClass} ${isCompleted ? 'text-green-500' : 'text-gray-400'}`}></i>
                         <div className={styles.progressText}>
                           <p>
-                            {challenge.name}
+                            {challenge.name || 'Unnamed Challenge'}
                             {challenge.starsAwarded > 0 && (
                               <span className={styles.starEarn}>
                                 {' '}
@@ -579,28 +601,31 @@ export default function DashboardPage() {
                               {isCompleted && isClaimed && (
                                 <span className={styles.badge}>Claimed</span>
                               )}
+                               {isCompleted && !isClaimed && challenge.rewardType !== 'claimable' && (
+                                <span className={styles.badge}>Earned</span>
+                              )}
                             </p>
                           )}
                           <div className={styles.progressBar}>
                             <div
-                              className={styles.progress}
+                              className={`${styles.progress} ${isCompleted ? 'bg-green-500' : 'bg-blue-500'}`}
                               style={{ width: `${progressPercent}%` }}
                             ></div>
                           </div>
-                          <p>{progressText}</p>
+                          <p className={styles.progressAmount}>{progressText}</p>
                         </div>
                       </Link>
                       <div className={styles.progressCta}>
                         {canClaim ? (
-                          <Link href="/claim-reward" className={styles.ctaBtn}>
+                          <Link href="/claim-reward" className={styles.ctaBtnClaim}>
                             Claim
                           </Link>
-                        ) : isCompleted && !canClaim ? (
-                          <span className={styles.badge}>Done</span>
+                        ) : isCompleted ? (
+                           <span className={styles.badge}>Done</span>
                         ) : (
                           <Link
                             href={challenge.ctaLink || '/trade'}
-                            className={styles.ctaBtn}
+                            className={styles.ctaBtnGo}
                           >
                             {challenge.ctaText || 'Go'}
                           </Link>
@@ -633,12 +658,17 @@ export default function DashboardPage() {
                 <p className="text-center text-red-500 py-4 text-sm">{alertsError}</p>
               ) : alerts.length > 0 ? (
                 alerts.map((alert) => (
-                  <div key={alert._id} className={styles.alertItem}>
+                  <Link
+                    href={alert.link || '#'}
+                    key={alert._id}
+                    className={`${styles.alertItem} ${alert.link ? styles.alertLink : ''}`}
+                    onClick={(e) => !alert.link && e.preventDefault()}
+                  >
                     <p>
-                      <strong>{alert.title}:</strong> {alert.message}
+                      <strong>{alert.title || 'Notification'}:</strong> {alert.message || 'No details.'}
                     </p>
                     <span>{formatDate(alert.createdAt)}</span>
-                  </div>
+                  </Link>
                 ))
               ) : (
                 <p className="text-center text-gray-500 py-4 text-sm">No recent alerts.</p>
@@ -657,19 +687,17 @@ export default function DashboardPage() {
                 <svg className={styles.progressRing} viewBox="0 0 36 36">
                   <circle
                     className={styles.progressRingBackground}
-                    cx="18"
-                    cy="18"
-                    r="16"
-                    strokeWidth="4"
+                    cx="18" cy="18" r="15.915"
+                    fill="transparent"
+                    strokeWidth="3"
                   />
                   <circle
                     className={styles.progressRingFill}
-                    cx="18"
-                    cy="18"
-                    r="16"
-                    strokeWidth="4"
-                    strokeDasharray="100, 100"
-                    strokeDashoffset={100 - progress10g}
+                    cx="18" cy="18" r="15.915"
+                    fill="transparent"
+                    strokeWidth="3"
+                    strokeDasharray={`${progress10g}, 100`}
+                    strokeDashoffset="0"
                     transform="rotate(-90 18 18)"
                   />
                 </svg>
@@ -681,46 +709,34 @@ export default function DashboardPage() {
                   className={styles.goldIcon}
                 />
               </div>
-              <p className={styles.progressPercentage}>{progress10g.toFixed(0)}%</p>
-              <p className={styles.progressText}>Need {formatGrams(neededFor10g)} more</p>
+              <p className={styles.progressPercentage}>{progress10g.toFixed(0)}% to 10g</p>
+              <p className={styles.progressText}>
+                  {progress10g < 100 ? `Need ${formatGrams(neededFor10g)} more` : '10g Redeemable!'}
+              </p>
               <div className={styles.redeemOptions}>
-                <Link
-                  href={progress1g >= 100 ? '/redeem-confirmation/1g/1' : '#'}
-                  className={`${styles.btnSecondary} ${
-                    progress1g < 100 ? styles.btnDisabled : styles.btnActive
-                  }`}
-                  aria-disabled={progress1g < 100}
-                  onClick={(e) => {
-                    if (progress1g < 100) e.preventDefault();
-                  }}
-                >
-                  1g
-                </Link>
-                <Link
-                  href={progress5g >= 100 ? '/redeem-confirmation/5g/1' : '#'}
-                  className={`${styles.btnSecondary} ${
-                    progress5g < 100 ? styles.btnDisabled : styles.btnActive
-                  }`}
-                  aria-disabled={progress5g < 100}
-                  onClick={(e) => {
-                    if (progress5g < 100) e.preventDefault();
-                  }}
-                >
-                  5g
-                </Link>
-                <Link
-                  href={progress10g >= 100 ? '/redeem-confirmation/10g/1' : '#'}
-                  className={`${styles.btnSecondary} ${
-                    progress10g < 100 ? styles.btnDisabled : styles.btnActive
-                  }`}
-                  aria-disabled={progress10g < 100}
-                  onClick={(e) => {
-                    if (progress10g < 100) e.preventDefault();
-                  }}
-                >
-                  10g
-                </Link>
+                {[1, 5, 10].map((grams) => {
+                   const currentProgress = getRedeemProgress(grams);
+                   const canRedeem = currentProgress >= 100;
+                   return (
+                      <Link
+                        key={grams}
+                        href={canRedeem ? `/redeem-confirmation/${grams}g/1` : '#'}
+                        className={`${styles.btnSecondary} ${
+                          !canRedeem ? styles.btnDisabled : styles.btnActive
+                        }`}
+                        aria-disabled={!canRedeem}
+                        onClick={(e) => {
+                          if (!canRedeem) e.preventDefault();
+                        }}
+                      >
+                        {grams}g
+                      </Link>
+                   );
+                })}
               </div>
+               <Link href="/redeem" className={`${styles.btnSecondary} ${styles.seeMore} ${styles.redeemMore}`}>
+                 More Options <i className="fas fa-arrow-right"></i>
+               </Link>
             </div>
           </div>
         </div>
