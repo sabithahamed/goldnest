@@ -14,7 +14,6 @@ import Image from 'next/image';
 import { WalletOverviewSkeleton } from '@/components/skeletons/WalletOverviewSkeleton';
 import { TransactionRowSkeleton } from '@/components/skeletons/TransactionRowSkeleton';
 import { RedeemProgressSkeleton } from '@/components/skeletons/RedeemProgressSkeleton';
-import { GamificationSkeleton } from '@/components/skeletons/GamificationSkeleton';
 
 // --- Helper Functions ---
 const formatCurrency = (value, showCurrencySymbol = true) => {
@@ -224,13 +223,6 @@ export default function WalletPage() {
 
     const hasSufficientGoldForCustom = goldBalanceGrams >= customRedeemTotalGrams && customRedeemTotalGrams > 0;
 
-    // --- Gamification Data ---
-    const earnedBadgeIds = userData?.earnedBadgeIds || [];
-    const challengeProgressMap = userData?.challengeProgress || {};
-    const starCount = userData?.starCount || 0;
-    const allBadges = userData?.gamificationDefs?.badges || [];
-    const activeChallenges = userData?.gamificationDefs?.challenges || [];
-    const maxStars = 5;
 
     // --- RENDER FUNCTIONS ---
     const renderTransactionRow = (tx, index) => {
@@ -494,116 +486,6 @@ export default function WalletPage() {
                     </div>
                 </div>
 
-                {/* Gamifications & Rewards - Updated to Match HTML Version */}
-                <div className="card" id="gamification">
-                    <h3>Gamifications & Rewards</h3>
-                    {loading ? (
-                        <GamificationSkeleton />
-                    ) : error && (!userData?.gamificationDefs) ? (
-                        <p className="error-message p-4">Error loading gamification details.</p>
-                    ) : userData && activeChallenges ? (
-                        <div className="gamification-rewards">
-                            {/* Progress Items */}
-                            <div className="gamification-section">
-                                {activeChallenges.length > 0 ? activeChallenges.map((challenge, index) => {
-                                    const currentProgress = challengeProgressMap[challenge.id] || 0;
-                                    const goal = challenge.goal || 1;
-                                    const progressPercent = Math.min(100, (currentProgress / goal) * 100);
-                                    const isCompleted = currentProgress >= goal;
-
-                                    // Map challenge data to HTML structure
-                                    const title = challenge.name || `Challenge ${index + 1}`;
-                                    const reward = challenge.rewardText || 'Unlock a special reward!';
-                                    const ctaLink = challenge.ctaLink || '/trade';
-                                    const ctaText = challenge.ctaText || (isCompleted ? 'Claim Reward' : 'Start Now');
-                                    const stars = challenge.starsAwarded || 1;
-
-                                    // Progress text logic
-                                    let progressText = 'Not yet started';
-                                    if (isCompleted) {
-                                        progressText = 'Completed!';
-                                    } else if (currentProgress > 0) {
-                                        const needed = Math.max(0, goal - currentProgress);
-                                        if (challenge.unit === 'LKR') {
-                                            progressText = `${formatCurrency(needed)} more`;
-                                        } else if (challenge.unit === 'g') {
-                                            progressText = `${formatGrams(needed)} more`;
-                                        } else {
-                                            progressText = `${needed.toFixed(0)} more`;
-                                        }
-                                    }
-
-                                    // Icon logic to match HTML
-                                    let iconClass = 'fas fa-trophy';
-                                    if (isCompleted) {
-                                        iconClass = 'fas fa-check-circle';
-                                    } else if (challenge.type?.includes('REFER')) {
-                                        iconClass = 'fas fa-users';
-                                    } else if (challenge.type?.includes('INVEST') || challenge.type?.includes('TRADE')) {
-                                        iconClass = 'fas fa-trophy';
-                                    }
-
-                                    return (
-                                        <div key={challenge.id} className={`progress-item ${isCompleted ? 'completed' : 'incomplete'}`} data-status={isCompleted ? 'completed' : 'incomplete'}>
-                                            <Link href={ctaLink} className="progress-link">
-                                                <i className={iconClass}></i>
-                                                <div className="progress-text">
-                                                    <p>{title} <span className="star-earn">Earn {stars} star{stars !== 1 ? 's' : ''}</span></p>
-                                                    <p className="reward-text">{reward}</p>
-                                                    <div className="progress-bar">
-                                                        <div className="progress" style={{ width: `${progressPercent}%` }}></div>
-                                                    </div>
-                                                    <p>{progressText}</p>
-                                                </div>
-                                            </Link>
-                                            <Link href={ctaLink} className={`btn btn-${isCompleted ? 'primary' : 'secondary'} btn-small cta-btn`}>
-                                                {ctaText}
-                                            </Link>
-                                        </div>
-                                    );
-                                }) : (
-                                    <p className="empty-message">No active challenges right now.</p>
-                                )}
-                            </div>
-
-                            {/* Stars Section */}
-                            <div className="stars-section">
-                                <h4>
-                                    Your Stars
-                                    <button
-                                        className="info-btn"
-                                        onClick={() => setShowStarsInfo(!showStarsInfo)}
-                                        aria-label="Learn more about stars"
-                                        aria-expanded={showStarsInfo}
-                                    >
-                                        <i className="fas fa-info-circle"></i>
-                                    </button>
-                                </h4>
-                                <div className="stars-display">
-                                    {[...Array(maxStars)].map((_, index) => (
-                                        <i
-                                            key={index}
-                                            className={`fas fa-star ${index < starCount ? 'star-filled' : 'star-empty'}`}
-                                        ></i>
-                                    ))}
-                                </div>
-                                <p>{starCount} out of {maxStars} stars earned - Complete more goals to earn stars!</p>
-                                {showStarsInfo && (
-                                    <div className="stars-info-modal">
-                                        <p>Earn 5 stars to unlock a special badge and {formatCurrency(1000)} cashback!</p>
-                                        <button
-                                            className="btn btn-secondary btn-small"
-                                            onClick={() => setShowStarsInfo(false)}
-                                            aria-label="Close stars information modal"
-                                        >
-                                            Close
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ) : null }
-                </div>
             </section>
 
             <FooterInternal />

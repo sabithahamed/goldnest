@@ -561,7 +561,7 @@ export default function DashboardPage() {
                       className={`${styles.progressItem} ${isCompleted ? styles.completed : ''}`}
                       data-status={isCompleted ? 'completed' : 'incomplete'}
                     >
-                      <Link href="/wallet#gamification" className={styles.progressLink}>
+                      <Link href="/gamification" className={styles.progressLink}>
                         <i className={`${iconClass} ${isCompleted ? 'text-green-500' : ''}`}></i>
                         <div className={styles.progressText}>
                           <p>
@@ -610,7 +610,7 @@ export default function DashboardPage() {
                   );
                 })}
                 <Link
-                  href="/wallet#gamification"
+                  href="/gamification"
                   className={`${styles.btnSecondary} ${styles.seeMore}`}
                 >
                   Go to Rewards <i className="fas fa-arrow-right"></i>
