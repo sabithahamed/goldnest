@@ -3,11 +3,10 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-// Keep config imports for gamification definitions needed in the response
-const { getActiveChallenges, getAllBadges } = require('../config/gamification');
-// Keep notification service if used elsewhere (like changeUserPassword)
-const { createNotification } = require('../services/notificationService');
-const { getGoldMarketSummary } = require('../utils/goldDataUtils'); // <--- ADDED THIS IMPORT
+const BadgeDefinition = require('../models/BadgeDefinition'); // <-- IMPORT MODEL
+const ChallengeDefinition = require('../models/ChallengeDefinition'); // <-- IMPORT MODEL
+const { createNotification } = require('../services/notificationService'); // Keep for changeUserPassword etc.
+const { getGoldMarketSummary } = require('../utils/goldDataUtils');
 
 // Helper Function (Optional but recommended)
 const sendErrorResponse = (res, statusCode, message, error) => {
@@ -29,35 +28,38 @@ const getUserProfile = async (req, res) => {
     const userId = req.user._id;
 
     try {
-        // 2. Fetch Fresh, Full User Data
-        // Populate necessary fields directly for the response.
-        const user = await User.findById(userId)
-            .populate('transactions')       // Populate transactions for calculations and response
-            .populate('automaticPayments') // Populate auto payments for response
-            .select('-password');          // Exclude password
+        // 2. Fetch User Data AND Gamification Definitions in parallel
+        const [user, allBadgeDefs, activeChallengeDefs] = await Promise.all([
+            User.findById(userId)
+                .populate('transactions')       // Populate for calculations & response
+                .populate('automaticPayments') // Populate for response
+                .select('-password'),          // Exclude password
+            BadgeDefinition.find({ isActive: true }).lean(), // Use .lean() for plain JS objects
+            ChallengeDefinition.find({ isActive: true }).lean() // Use .lean()
+        ]);
+        // --- END Fetch ---
 
         if (!user) {
             console.error(`[UCP getUserProfile] User ${userId} not found in database.`);
             return res.status(404).json({ message: 'User not found.' });
         }
+        // Log warnings if definitions couldn't be fetched, but don't fail the request
+        if (!allBadgeDefs) console.warn("[UCP getUserProfile] Failed to fetch badge definitions.");
+        if (!activeChallengeDefs) console.warn("[UCP getUserProfile] Failed to fetch challenge definitions.");
 
         console.log(`[UCP Debug getUserProfile] Fetched user ${userId} state successfully.`);
 
-        // --- V V V NEW PROFIT CALCULATION V V V ---
+        // --- V V V PROFIT CALCULATION (Keep this logic) V V V ---
 
         let totalInvestedLKR = 0;
         let totalGramsPurchased = 0;
 
         // Iterate through user's actual transactions array (populated)
         (user.transactions || []).forEach(tx => {
-            // Ensure tx object is valid and has the necessary properties
             if (tx && tx.type === 'investment' && tx.status === 'completed') {
-                totalInvestedLKR += tx.amountLKR || 0;       // Sum LKR spent on gold
-                totalGramsPurchased += tx.amountGrams || 0; // Sum grams received
+                totalInvestedLKR += tx.amountLKR || 0;
+                totalGramsPurchased += tx.amountGrams || 0;
             }
-            // Note: This simple calculation ignores sales. A more complex cost basis
-            // would track sales using FIFO/LIFO or average cost method on sales.
-            // For a basic dashboard profit view, average purchase price is common.
         });
 
         const averagePurchasePricePerGram = (totalGramsPurchased > 0)
@@ -65,7 +67,7 @@ const getUserProfile = async (req, res) => {
             : 0;
 
         // Get current market price
-        const marketSummary = getGoldMarketSummary(); // Assuming this returns { latestPricePerGram: number, ... }
+        const marketSummary = getGoldMarketSummary();
         const currentPricePerGram = marketSummary?.latestPricePerGram || 0;
 
         // Calculate current value and profit
@@ -74,30 +76,22 @@ const getUserProfile = async (req, res) => {
         let overallProfitPercent = 0;
 
         if (averagePurchasePricePerGram > 0 && user.goldBalanceGrams > 0) {
-            // Calculate the cost basis *of the currently held gold* using the average price
             const costBasisOfCurrentHoldings = user.goldBalanceGrams * averagePurchasePricePerGram;
             overallProfitLKR = currentValueLKR - costBasisOfCurrentHoldings;
-
-            // Calculate percentage profit based on the cost basis
-            if (costBasisOfCurrentHoldings > 0) { // Avoid division by zero if cost basis is somehow zero
+            if (costBasisOfCurrentHoldings > 0) {
                 overallProfitPercent = (overallProfitLKR / costBasisOfCurrentHoldings) * 100;
             }
         }
-        // --- ^ ^ ^ END NEW PROFIT CALCULATION ^ ^ ^ ---
-
+        // --- ^ ^ ^ END PROFIT CALCULATION ^ ^ ^ ---
 
         // 3. Prepare Response Data
         const sortedTransactions = (user.transactions || [])
             ?.filter(tx => tx && tx.date) // Ensure transaction and date exist
             ?.sort((a, b) => new Date(b.date) - new Date(a.date)) || [];
 
-        // Get gamification definitions for the frontend
-        const activeChallengesDefs = getActiveChallenges();
-        const allBadgesDefs = getAllBadges();
-
         console.log(`[UCP Debug getUserProfile] Responding for user ${user._id}. AvgPrice=${averagePurchasePricePerGram.toFixed(2)}, CurrentValue=${currentValueLKR.toFixed(2)}, Profit=${overallProfitLKR.toFixed(2)}`);
 
-        // 4. Send Response with current user state AND calculated values
+        // 4. Send Response with current user state, calculated values, AND DB definitions
         res.json({
              // Basic Info
              _id: user._id,
@@ -111,28 +105,26 @@ const getUserProfile = async (req, res) => {
              // Wallet Core Data
              goldBalanceGrams: user.goldBalanceGrams,
              cashBalanceLKR: user.cashBalanceLKR,
-             transactions: sortedTransactions, // Send sorted transactions if frontend needs them
+             transactions: sortedTransactions,
              automaticPayments: user.automaticPayments || [],
              defaultShippingAddress: user.defaultShippingAddress || null,
 
-             // --- ADD/UPDATE Calculated Values ---
-             averagePurchasePricePerGram: averagePurchasePricePerGram, // Average price paid per gram historically
-             currentGoldValueLKR: currentValueLKR, // Current market value of held gold
-             overallProfitLKR: overallProfitLKR,     // Total profit/loss in LKR based on average cost
-             overallProfitPercent: overallProfitPercent, // Total profit/loss percentage
-             // --- END Calculated Values ---
+             // Calculated Values
+             averagePurchasePricePerGram: averagePurchasePricePerGram,
+             currentGoldValueLKR: currentValueLKR,
+             overallProfitLKR: overallProfitLKR,
+             overallProfitPercent: overallProfitPercent,
 
-             // --- Gamification State (as currently stored in DB) ---
+             // Gamification State (from user document)
              earnedBadgeIds: user.earnedBadgeIds || [],
-             // Send challengeProgress as a plain object for JSON compatibility
              challengeProgress: user.challengeProgress ? Object.fromEntries(user.challengeProgress) : {},
              completedChallengeIds: user.completedChallengeIds || [],
              starCount: user.starCount || 0,
 
-             // Definitions for the frontend to render badges/challenges
+             // Gamification Definitions (fetched from DB)
              gamificationDefs: {
-                 badges: allBadgesDefs,
-                 challenges: activeChallengesDefs
+                 badges: allBadgeDefs || [], // Send fetched definitions (fallback to empty array)
+                 challenges: activeChallengeDefs || [] // Send fetched definitions (fallback to empty array)
              }
          });
 
@@ -444,10 +436,11 @@ const deleteAutoPayment = async (req, res) => {
             return res.status(404).json({ message: 'Automatic payment setting not found.' });
         }
 
-        // 4. Remove the subdocument using the remove() method on the subdocument itself (preferred way)
+        // 4. Remove the subdocument using the remove() method on the subdocument itself
         // Note: Mongoose 8+ might require pulling by ID instead. Check docs if upgrading.
         await payment.remove(); // Mark for removal (or directly remove depending on Mongoose version/context)
-        let removed = true; // Assume remove() works as intended or marks for removal
+        // Alternatively, Mongoose 8+ might need: user.automaticPayments.pull({ _id: paymentId });
+
         console.log(`[UCP deleteAutoPayment] Marked/Removed auto payment ${paymentId} for user ${userId}`);
 
 
@@ -467,7 +460,7 @@ const deleteAutoPayment = async (req, res) => {
 
 // Export all controller functions
 module.exports = {
-    getUserProfile,         // Updated function with profit calculation
+    getUserProfile,         // Updated function
     updateUserProfile,
     changeUserPassword,
     addAutoPayment,
