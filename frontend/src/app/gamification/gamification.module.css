@@ -1,0 +1,391 @@
+/* src/app/gamification/GamificationPage.module.css */
+
+/* --- Main Layout --- */
+.gamification {
+    padding: 15px 5%;
+    min-height: calc(100vh - 56px - 200px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-family: 'Poppins', sans-serif;
+  }
+  
+  /* --- Header Section --- */
+  .header {
+    margin-bottom: 12px;
+  }
+  
+  .header h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 8px;
+  }
+  
+  .header p {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+  }
+  
+  /* --- Tabs --- */
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  
+  .tab {
+    padding: 8px 16px;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .tabActive {
+    background-color: #F8B612;
+    color: #fff;
+    border: none;
+  }
+  
+  .tabInactive {
+    background-color: #e7e7e7;
+    color: #333;
+    border: none;
+  }
+  
+  .tabInactive:hover {
+    background-color: #d5d5d5;
+  }
+  
+  /* --- Challenge Cards --- */
+  .challenges {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  @media (min-width: 768px) {
+    .challenges {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  
+  .challengeCard {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: transform 0.2s ease;
+  }
+  
+  .challengeCard:hover {
+    transform: translateY(-2px);
+  }
+  
+  .challengeHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .challengeIcon {
+    font-size: 1.5rem;
+    color: #F8B612;
+  }
+  
+  .completed .challengeIcon {
+    color: #28a745;
+  }
+  
+  .challengeHeader h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+    flex: 1;
+  }
+  
+  .starEarn {
+    font-size: 0.8rem;
+    color: #F8B612;
+    font-weight: 600;
+  }
+  
+  .statusBadge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  
+  .inProgress {
+    background-color: #fffbef;
+    color: #F8B612;
+  }
+  
+  .completed {
+    background-color: #d4edda;
+    color: #28a745;
+  }
+  
+  .claimed {
+    background-color: #e7e7e7;
+    color: #666;
+  }
+  
+  .challengeDescription {
+    font-size: 0.9rem;
+    color: #666;
+    margin: 0;
+  }
+  
+  .challengeReward {
+    font-size: 0.85rem;
+    color: #333;
+    margin: 0;
+  }
+  
+  .challengeReward strong {
+    font-weight: 600;
+  }
+  
+  .progressContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .progressBar {
+    width: 100%;
+    height: 6px;
+    background-color: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  
+  .progressFill {
+    height: 100%;
+    background-color: #F8B612;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  
+  .completed .progressFill {
+    background-color: #28a745;
+  }
+  
+  .progressText {
+    font-size: 0.8rem;
+    color: #666;
+    text-align: right;
+  }
+  
+  /* --- Button Styles --- */
+  .challengeAction {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .btnPrimary {
+    background-color: #F8B612;
+    color: #fff;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-align: center;
+    text-decoration: none;
+  }
+  
+  .btnPrimary:hover {
+    background-color: #e0a00e;
+  }
+  
+  .btnSecondary {
+    background-color: #e7e7e7;
+    color: #333;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    text-align: center;
+    text-decoration: none;
+  }
+  
+  .btnSecondary:hover {
+    background-color: #d5d5d5;
+  }
+  
+  /* --- Stars Section --- */
+  .starsSection {
+    margin: 16px auto; /* Center the section */
+    padding: 16px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 600px; /* Limit width for better centering */
+  }
+  
+  .starsHeader {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  
+  .starsHeader h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+  }
+  
+  .tooltipContainer {
+    position: relative;
+    display: inline-block;
+  }
+  
+  .infoIcon {
+    font-size: 0.9rem;
+    color: #666;
+    cursor: pointer;
+  }
+  
+  .tooltipText {
+    visibility: hidden;
+    width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 5px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Position above the icon */
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.8rem;
+  }
+  
+  .tooltipText::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+  }
+  
+  .tooltipContainer:hover .tooltipText {
+    visibility: visible;
+    opacity: 1;
+  }
+  
+  .stars {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+    justify-content: center; /* Center the stars */
+  }
+  
+  .star {
+    font-size: 1.2rem;
+    color: #F8B612;
+  }
+  
+  .starEmpty {
+    color: #e7e7e7;
+  }
+  
+  .tierText {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #333;
+    margin: 0 0 8px 0;
+    text-align: center;
+  }
+  
+  .progressBar {
+    width: 100%;
+    height: 6px;
+    background-color: #eee;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 4px;
+  }
+  
+  .progressFill {
+    height: 100%;
+    background-color: #F8B612;
+    border-radius: 3px;
+    transition: width 0.3s ease;
+  }
+  
+  .progressText {
+    font-size: 0.8rem;
+    color: #666;
+    text-align: center;
+    margin: 0;
+  }
+  
+  /* --- Back Button --- */
+  .backButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    color: #333;
+    background-color: #e7e7e7;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+    margin-top: 16px;
+  }
+  
+  .backButton:hover {
+    background-color: #d5d5d5;
+  }
+  
+  /* --- Responsive Adjustments --- */
+  @media (max-width: 768px) {
+    .gamification {
+      padding: 10px 3%;
+    }
+  
+    .challenges {
+      grid-template-columns: 1fr;
+    }
+  
+    .challengeCard {
+      padding: 12px;
+    }
+  
+    .btnPrimary, .btnSecondary, .backButton {
+      width: 100%;
+      text-align: center;
+    }
+  
+    .starsSection {
+      max-width: 100%; /* Full width on mobile */
+    }
+  }
