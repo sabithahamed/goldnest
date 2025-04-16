@@ -1,4 +1,5 @@
 // backend/controllers/userController.js
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
@@ -6,6 +7,7 @@ const User = require('../models/User');
 const { getActiveChallenges, getAllBadges } = require('../config/gamification');
 // Keep notification service if used elsewhere (like changeUserPassword)
 const { createNotification } = require('../services/notificationService');
+const { getGoldMarketSummary } = require('../utils/goldDataUtils'); // <--- ADDED THIS IMPORT
 
 // Helper Function (Optional but recommended)
 const sendErrorResponse = (res, statusCode, message, error) => {
@@ -15,7 +17,7 @@ const sendErrorResponse = (res, statusCode, message, error) => {
     res.status(statusCode).json({ message: responseMessage });
 };
 
-// @desc    Get current user's profile (incl. transactions, gamification state, auto payments, default shipping address)
+// @desc    Get current user's profile (incl. transactions, gamification state, auto payments, default shipping address, profit calculation)
 // @route   GET /api/users/me
 // @access  Private
 const getUserProfile = async (req, res) => {
@@ -30,7 +32,7 @@ const getUserProfile = async (req, res) => {
         // 2. Fetch Fresh, Full User Data
         // Populate necessary fields directly for the response.
         const user = await User.findById(userId)
-            .populate('transactions')       // Populate transactions for response
+            .populate('transactions')       // Populate transactions for calculations and response
             .populate('automaticPayments') // Populate auto payments for response
             .select('-password');          // Exclude password
 
@@ -41,9 +43,48 @@ const getUserProfile = async (req, res) => {
 
         console.log(`[UCP Debug getUserProfile] Fetched user ${userId} state successfully.`);
 
-        // --- NO Gamification Processing Logic Here Anymore ---
-        // The state returned is the current state stored in the database.
-        // Gamification updates are handled elsewhere (e.g., transaction processing).
+        // --- V V V NEW PROFIT CALCULATION V V V ---
+
+        let totalInvestedLKR = 0;
+        let totalGramsPurchased = 0;
+
+        // Iterate through user's actual transactions array (populated)
+        (user.transactions || []).forEach(tx => {
+            // Ensure tx object is valid and has the necessary properties
+            if (tx && tx.type === 'investment' && tx.status === 'completed') {
+                totalInvestedLKR += tx.amountLKR || 0;       // Sum LKR spent on gold
+                totalGramsPurchased += tx.amountGrams || 0; // Sum grams received
+            }
+            // Note: This simple calculation ignores sales. A more complex cost basis
+            // would track sales using FIFO/LIFO or average cost method on sales.
+            // For a basic dashboard profit view, average purchase price is common.
+        });
+
+        const averagePurchasePricePerGram = (totalGramsPurchased > 0)
+            ? (totalInvestedLKR / totalGramsPurchased)
+            : 0;
+
+        // Get current market price
+        const marketSummary = getGoldMarketSummary(); // Assuming this returns { latestPricePerGram: number, ... }
+        const currentPricePerGram = marketSummary?.latestPricePerGram || 0;
+
+        // Calculate current value and profit
+        const currentValueLKR = user.goldBalanceGrams * currentPricePerGram;
+        let overallProfitLKR = 0;
+        let overallProfitPercent = 0;
+
+        if (averagePurchasePricePerGram > 0 && user.goldBalanceGrams > 0) {
+            // Calculate the cost basis *of the currently held gold* using the average price
+            const costBasisOfCurrentHoldings = user.goldBalanceGrams * averagePurchasePricePerGram;
+            overallProfitLKR = currentValueLKR - costBasisOfCurrentHoldings;
+
+            // Calculate percentage profit based on the cost basis
+            if (costBasisOfCurrentHoldings > 0) { // Avoid division by zero if cost basis is somehow zero
+                overallProfitPercent = (overallProfitLKR / costBasisOfCurrentHoldings) * 100;
+            }
+        }
+        // --- ^ ^ ^ END NEW PROFIT CALCULATION ^ ^ ^ ---
+
 
         // 3. Prepare Response Data
         const sortedTransactions = (user.transactions || [])
@@ -54,9 +95,9 @@ const getUserProfile = async (req, res) => {
         const activeChallengesDefs = getActiveChallenges();
         const allBadgesDefs = getAllBadges();
 
-        console.log(`[UCP Debug getUserProfile] Responding for user ${user._id}. Current CompletedChallenges:`, user.completedChallengeIds);
+        console.log(`[UCP Debug getUserProfile] Responding for user ${user._id}. AvgPrice=${averagePurchasePricePerGram.toFixed(2)}, CurrentValue=${currentValueLKR.toFixed(2)}, Profit=${overallProfitLKR.toFixed(2)}`);
 
-        // 4. Send Response with current user state
+        // 4. Send Response with current user state AND calculated values
         res.json({
              // Basic Info
              _id: user._id,
@@ -70,9 +111,16 @@ const getUserProfile = async (req, res) => {
              // Wallet Core Data
              goldBalanceGrams: user.goldBalanceGrams,
              cashBalanceLKR: user.cashBalanceLKR,
-             transactions: sortedTransactions,
+             transactions: sortedTransactions, // Send sorted transactions if frontend needs them
              automaticPayments: user.automaticPayments || [],
              defaultShippingAddress: user.defaultShippingAddress || null,
+
+             // --- ADD/UPDATE Calculated Values ---
+             averagePurchasePricePerGram: averagePurchasePricePerGram, // Average price paid per gram historically
+             currentGoldValueLKR: currentValueLKR, // Current market value of held gold
+             overallProfitLKR: overallProfitLKR,     // Total profit/loss in LKR based on average cost
+             overallProfitPercent: overallProfitPercent, // Total profit/loss percentage
+             // --- END Calculated Values ---
 
              // --- Gamification State (as currently stored in DB) ---
              earnedBadgeIds: user.earnedBadgeIds || [],
@@ -122,6 +170,7 @@ const updateUserProfile = async (req, res) => {
     if (city !== undefined && user.city !== city) { user.city = city; updated = true; }
     // Basic check for defaultShippingAddress; add deeper validation if needed
     if (defaultShippingAddress !== undefined && JSON.stringify(user.defaultShippingAddress) !== JSON.stringify(defaultShippingAddress)) {
+        // Add validation for required fields in defaultShippingAddress if needed
         user.defaultShippingAddress = defaultShippingAddress;
         updated = true;
     }
@@ -217,7 +266,7 @@ const changeUserPassword = async (req, res) => {
         if (error.name === 'ValidationError') {
              sendErrorResponse(res, 400, "Validation Error changing password.", error);
         } else {
-             sendErrorResponse(res, 500, `Server Error changing password for user ${userId}.`, error);
+             sendErrorResponse(res, 500, `Server Error changing password for ${userId}.`, error);
         }
     }
 };
@@ -249,7 +298,7 @@ const addAutoPayment = async (req, res) => {
 
     try {
         // 3. Fetch fresh user data
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).populate('automaticPayments'); // Populate to check length accurately
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         // 4. Check Limit
@@ -259,11 +308,12 @@ const addAutoPayment = async (req, res) => {
 
         // 5. Create and Add Subdocument
         const newPayment = {
+            _id: new mongoose.Types.ObjectId(), // Generate ID explicitly if needed before save
             frequency,
             amountLKR: finalAmount,
             isActive: true, // Default new payments to active
-            // createdAt: new Date(), // Optional timestamp
-            // nextRunDate: calculateNextRunDate(frequency), // Optional: calculate if scheduler needs it
+            // createdAt: new Date(), // Mongoose adds timestamps if schema configured
+            // nextRunDate: calculateNextRunDate(frequency), // Calculate if scheduler needs it immediately
         };
         user.automaticPayments.push(newPayment);
 
@@ -271,7 +321,12 @@ const addAutoPayment = async (req, res) => {
         await user.save();
 
         // 7. Respond with the newly added payment (which now has an _id)
-        const addedPayment = user.automaticPayments[user.automaticPayments.length - 1];
+        // Find the specific payment added to ensure we return the correct one with its generated _id
+        const addedPayment = user.automaticPayments.find(p => p._id.equals(newPayment._id));
+        if (!addedPayment) {
+            // This shouldn't happen if save was successful, but good practice
+             return sendErrorResponse(res, 500, `Server Error finding added auto payment for user ${userId}.`, null);
+        }
         res.status(201).json(addedPayment);
 
     } catch (error) {
@@ -322,10 +377,10 @@ const updateAutoPayment = async (req, res) => {
 
     try {
         // 3. Fetch fresh user data
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).populate('automaticPayments'); // Populate needed to find subdoc by ID
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        // 4. Find the subdocument
+        // 4. Find the subdocument using Mongoose's id() method
         const payment = user.automaticPayments.id(paymentId);
         if (!payment) {
             return res.status(404).json({ message: 'Automatic payment setting not found.' });
@@ -335,7 +390,7 @@ const updateAutoPayment = async (req, res) => {
         let updated = false;
         if (frequency !== undefined && payment.frequency !== frequency) {
             payment.frequency = frequency; updated = true;
-            // payment.nextRunDate = calculateNextRunDate(frequency); // Optional: recalculate
+            // payment.nextRunDate = calculateNextRunDate(frequency); // Optional: recalculate if needed
         }
         if (finalAmount !== undefined && payment.amountLKR !== finalAmount) {
             payment.amountLKR = finalAmount; updated = true;
@@ -347,7 +402,7 @@ const updateAutoPayment = async (req, res) => {
 
         // 6. Save Parent Document only if subdocument changed
         if (updated) {
-            // payment.updatedAt = new Date(); // Optional timestamp
+            // payment.updatedAt = new Date(); // Mongoose handles timestamps if schema configured
             await user.save();
         }
 
@@ -379,7 +434,7 @@ const deleteAutoPayment = async (req, res) => {
 
     try {
         // 2. Fetch fresh user data
-        const user = await User.findById(userId);
+        const user = await User.findById(userId).populate('automaticPayments'); // Populate to allow subdoc removal
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         // 3. Find the subdocument
@@ -389,41 +444,33 @@ const deleteAutoPayment = async (req, res) => {
             return res.status(404).json({ message: 'Automatic payment setting not found.' });
         }
 
-        // 4. Remove the subdocument (Mongoose >= 6 recommended way)
-        let removed = false;
-        if (typeof payment.remove === 'function') {
-            payment.remove(); // Mark for removal
-            removed = true;
-            console.log(`[UCP deleteAutoPayment] Marked auto payment ${paymentId} for removal for user ${userId}`);
-        } else {
-            // Fallback for older Mongoose / safety
-            user.automaticPayments.pull({ _id: paymentId });
-            // Check if pull actually removed something (optional)
-            // We assume it did if the payment was found.
-            removed = true;
-            console.warn(`[UCP WARN deleteAutoPayment] Using pull() fallback for ${paymentId} user ${userId}.`);
-        }
+        // 4. Remove the subdocument using the remove() method on the subdocument itself (preferred way)
+        // Note: Mongoose 8+ might require pulling by ID instead. Check docs if upgrading.
+        await payment.remove(); // Mark for removal (or directly remove depending on Mongoose version/context)
+        let removed = true; // Assume remove() works as intended or marks for removal
+        console.log(`[UCP deleteAutoPayment] Marked/Removed auto payment ${paymentId} for user ${userId}`);
 
-        // 5. Save Parent Document if removal occurred
-        if (removed) {
-            await user.save();
-            console.log(`[UCP deleteAutoPayment] Auto payment ${paymentId} deleted successfully for user ${userId}`);
-        }
+
+        // 5. Save Parent Document to persist the removal
+        await user.save();
+        console.log(`[UCP deleteAutoPayment] Auto payment ${paymentId} deletion saved successfully for user ${userId}`);
+
 
         // 6. Respond
         res.json({ message: 'Automatic payment deleted successfully.', deletedId: paymentId });
 
     } catch (error) {
+         console.error(`[UCP ERROR deleteAutoPayment] Error deleting payment ${paymentId} for user ${userId}:`, error);
          sendErrorResponse(res, 500, `Server Error deleting auto payment ${paymentId} for user ${userId}.`, error);
     }
 };
 
 // Export all controller functions
 module.exports = {
-    getUserProfile,         // Updated function
-    updateUserProfile,      // Unchanged
-    changeUserPassword,     // Unchanged
-    addAutoPayment,         // Unchanged
-    updateAutoPayment,      // Unchanged
-    deleteAutoPayment       // Unchanged
+    getUserProfile,         // Updated function with profit calculation
+    updateUserProfile,
+    changeUserPassword,
+    addAutoPayment,
+    updateAutoPayment,
+    deleteAutoPayment
 };
