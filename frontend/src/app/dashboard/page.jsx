@@ -519,7 +519,7 @@ export default function DashboardPage() {
                     <div className={styles.aiInsight}>
                       <span className={styles.aiLabel}>✨ AI Trend</span>
                       <p>
-                        {aiTrend || 'Loading AI trend...'} {/* Display AI trend */}
+                        {aiTrend || 'Loading AI trend......'} {/* Display AI trend */}
                          {/* Link to internal market page */}
                         {aiTrend && <Link href="/marketinternal" className={styles.aiLink}>Learn More</Link>}
                       </p>
