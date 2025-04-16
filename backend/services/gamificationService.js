@@ -1,5 +1,7 @@
 // backend/services/gamificationService.js
-const { BADGES, CHALLENGES, getActiveChallenges, getAllBadges } = require('../config/gamification');
+// REMOVE: const { BADGES, CHALLENGES, getActiveChallenges, getAllBadges } = require('../config/gamification'); // Old config import removed
+const BadgeDefinition = require('../models/BadgeDefinition'); // <-- IMPORT MODEL (As requested, though not directly used in this function)
+const ChallengeDefinition = require('../models/ChallengeDefinition'); // <-- IMPORT MODEL (As requested, though not directly used in this function)
 // REMOVE createNotification import - Was not present, remains not present as intended.
 
 /**
@@ -29,24 +31,35 @@ const getStartOf = (period) => {
 
 
 /**
- * Calculates potential gamification changes based on user state.
+ * Calculates potential gamification changes based on user state using provided definitions.
  * Returns only the *deltas*: newly earned badge IDs, newly completed challenge IDs,
  * stars to potentially add, and the full calculated progress map *if* it differs.
- * Does NOT perform database saves or send notifications.
+ * Does NOT perform database fetches/saves or send notifications.
  *
  * @param {object} user - The user object (must include transactions, earnedBadgeIds, completedChallengeIds, challengeProgress).
+ * @param {Array<object>} allBadges - Array of BadgeDefinition objects fetched from DB.
+ * @param {Array<object>} activeChallenges - Array of active ChallengeDefinition objects fetched from DB.
  * @returns {object} An object containing:
  *   - `newBadgeIds` (Array<string>): List of badge IDs newly earned based on criteria.
  *   - `newCompletedChallengeIds` (Array<string>): List of challenge IDs newly completed based on criteria.
  *   - `starsToAdd` (number): Total stars calculated from newly earned items.
  *   - `updatedProgressMap` (Map<string, number> | null): The calculated challenge progress map, ONLY if it differs from the user's existing progress; otherwise null.
  */
-const processGamificationState = (user) => {
+// Modified function signature to accept definitions fetched from the caller
+const processGamificationState = (user, allBadges, activeChallenges) => {
     // Initial checks for valid user input
     if (!user || !user._id) { // Check for user and user._id for logging
         console.warn("[GS] processGamificationState called with invalid or missing user object.");
         return { newBadgeIds: [], newCompletedChallengeIds: [], starsToAdd: 0, updatedProgressMap: null };
     }
+     if (!allBadges || !Array.isArray(allBadges)) {
+         console.warn("[GS] processGamificationState called with invalid or missing allBadges array.");
+         return { newBadgeIds: [], newCompletedChallengeIds: [], starsToAdd: 0, updatedProgressMap: null };
+     }
+     if (!activeChallenges || !Array.isArray(activeChallenges)) {
+        console.warn("[GS] processGamificationState called with invalid or missing activeChallenges array.");
+        return { newBadgeIds: [], newCompletedChallengeIds: [], starsToAdd: 0, updatedProgressMap: null };
+     }
 
     // Use provided user state, ensuring defaults for missing properties
     const transactions = user.transactions || [];
@@ -102,20 +115,21 @@ const processGamificationState = (user) => {
         // Add other transaction types if needed for future badges/challenges
     });
 
-    // --- Check Badges (Return only NEWLY earned IDs) ---
-    const allBadges = getAllBadges();
-    allBadges.forEach(badge => {
+    // --- Check Badges (using definitions from DB) ---
+    // REMOVE: const allBadges = getAllBadges(); // No longer needed here
+    allBadges.forEach(badge => { // Iterate over badges passed in
         // Basic validation for badge definition
-        if (!badge || !badge.id || !badge.criteria) {
+        if (!badge || !badge.badgeId || !badge.criteria) { // Use badgeId
             console.warn(`[GS] Skipping invalid badge definition:`, badge);
             return;
         }
         // Check if the user does NOT already have this badge
-        if (!existingBadgeIds.has(badge.id)) {
+        if (!existingBadgeIds.has(badge.badgeId)) { // Use badgeId
             let criteriaMet = false;
             const criteria = badge.criteria;
             try {
                 // Evaluate criteria based on calculated aggregates
+                // ... (KEEP the switch statement logic for checking criteria types) ...
                 switch (criteria.type) {
                     case 'SPECIFIC_TRANSACTION_COUNT':
                         if (criteria.transactionType === 'investment' && investmentCount >= criteria.count) criteriaMet = true;
@@ -123,8 +137,10 @@ const processGamificationState = (user) => {
                         // ... add other specific types if needed (e.g., 'sell_gold')
                         break;
                     case 'TRANSACTION_COUNT': // Generic count, check badge ID for specifics if needed
-                        if (badge.id === 'GOLD_STARTER' && (investmentCount + sellCount) >= criteria.count) criteriaMet = true;
-                        // Add other generic count badges here
+                        // Note: Using badgeId here might be slightly less readable than the old id,
+                        // consider adding a descriptive name field to the BadgeDefinition model if needed.
+                        if (badge.badgeId === 'GOLD_STARTER' && (investmentCount + sellCount) >= criteria.count) criteriaMet = true;
+                        // Add other generic count badges here based on badgeId
                         break;
                     case 'TOTAL_INVESTMENT_LKR':
                         if (totalInvestmentLKR >= criteria.amount) criteriaMet = true;
@@ -135,31 +151,32 @@ const processGamificationState = (user) => {
                      // Add other criteria types here (e.g., FIRST_INVESTMENT, FIRST_SELL)
                 }
             } catch (err) {
-                console.error(`[GS Error] User ${user._id}: Evaluating badge ${badge.id} criteria failed:`, err);
+                console.error(`[GS Error] User ${user._id}: Evaluating badge ${badge.badgeId} criteria failed:`, err); // Use badgeId
             }
 
             // If criteria met for a badge the user doesn't have, add it to the list of new badges
             if (criteriaMet) {
-                newBadgeIds.push(badge.id); // Store ID
+                newBadgeIds.push(badge.badgeId); // Use badgeId
                 starsToAdd += badge.starsAwarded || 0;
-                console.log(`[GS Debug] User ${user._id} -> NEWLY earned badge ID: ${badge.id}`);
+                console.log(`[GS Debug] User ${user._id} -> NEWLY earned badge ID: ${badge.badgeId}`); // Use badgeId
             }
         }
     });
 
-    // --- Calculate Challenge Progress & Check for NEW Completions ---
-    const activeChallenges = getActiveChallenges();
-    activeChallenges.forEach(challenge => {
-        // Basic validation for challenge definition
-        if (!challenge || !challenge.id || !challenge.type || !challenge.goal) {
+    // --- Calculate Challenge Progress & Check for NEW Completions (using definitions from DB) ---
+    // REMOVE: const activeChallenges = getActiveChallenges(); // No longer needed here
+    activeChallenges.forEach(challenge => { // Iterate over challenges passed in
+         // Basic validation for challenge definition
+         if (!challenge || !challenge.challengeId || !challenge.type || !challenge.goal) { // Use challengeId
              console.warn(`[GS] Skipping invalid challenge definition:`, challenge);
              return;
         }
 
-        let currentProgress = 0;
-        let progressCalculated = false; // Flag to ensure we only store progress if calculable
-        try {
+         let currentProgress = 0;
+         let progressCalculated = false; // Flag to ensure we only store progress if calculable
+         try {
             // Calculate progress based on challenge type and aggregated data
+            // ... (KEEP the switch statement logic for calculating progress based on type) ...
             switch (challenge.type) {
                 case 'INVEST_LKR_MONTHLY':
                     currentProgress = monthlyInvestLKR;
@@ -175,27 +192,27 @@ const processGamificationState = (user) => {
                     break;
                 // Add other challenge types here (e.g., INVEST_GRAMS_TOTAL, CONSECUTIVE_LOGINS etc.)
             }
-        } catch (err) {
-            console.error(`[GS Error] User ${user._id}: Calculating progress for challenge ${challenge.id} failed:`, err);
-        }
+         } catch (err) {
+            console.error(`[GS Error] User ${user._id}: Calculating progress for challenge ${challenge.challengeId} failed:`, err); // Use challengeId
+         }
 
         if (progressCalculated) {
              // Always store the calculated progress for active challenges
-            currentProgressMap.set(challenge.id, currentProgress);
+            currentProgressMap.set(challenge.challengeId, currentProgress); // Use challengeId
 
             // Check if the user has NOT already completed this challenge
             // NOTE: This assumes challenges are not repeatable within their cycle (e.g., once monthly is done, it's done for that month).
             // Add reset logic/checking based on challenge definition if needed (e.g., comparing completion date).
-            if (!existingCompletedChallenges.has(challenge.id)) {
+            if (!existingCompletedChallenges.has(challenge.challengeId)) { // Use challengeId
                  // Check if the calculated progress meets or exceeds the challenge goal
                  if (currentProgress >= challenge.goal) {
-                     newCompletedChallengeIds.push(challenge.id); // Store ID
+                     newCompletedChallengeIds.push(challenge.challengeId); // Use challengeId
                      starsToAdd += challenge.starsAwarded || 0;
-                     console.log(`[GS Debug] User ${user._id} -> NEWLY completed challenge ID: ${challenge.id} (Progress: ${currentProgress}/${challenge.goal})`);
+                     console.log(`[GS Debug] User ${user._id} -> NEWLY completed challenge ID: ${challenge.challengeId} (Progress: ${currentProgress}/${challenge.goal})`); // Use challengeId
                  }
             } else {
                 // Optional: Log if challenge was already completed
-                // console.log(`[GS Debug] User ${user._id} -> Challenge ${challenge.id} already completed.`);
+                // console.log(`[GS Debug] User ${user._id} -> Challenge ${challenge.challengeId} already completed.`);
             }
         }
     });

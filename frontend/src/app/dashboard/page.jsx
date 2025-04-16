@@ -734,7 +734,7 @@ export default function DashboardPage() {
                    );
                 })}
               </div>
-               <Link href="/redeem" className={`${styles.btnSecondary} ${styles.seeMore} ${styles.redeemMore}`}>
+               <Link href="/wallet#redeem" className={`${styles.btnSecondary} ${styles.seeMore} ${styles.redeemMore}`}>
                  More Options <i className="fas fa-arrow-right"></i>
                </Link>
             </div>
