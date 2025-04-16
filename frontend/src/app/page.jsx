@@ -97,7 +97,7 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
-            <section className="faq">
+            <section className="faq" id="faq">
                 <h2>Frequently Asked Questions</h2>
                 <div className="faq-container">
                     {faqData.map((item, index) => (
