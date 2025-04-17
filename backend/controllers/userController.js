@@ -2,10 +2,12 @@
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const multer = require('multer'); // <-- IMPORT Multer for error handling
+const cloudinary = require('../config/cloudinary'); // <-- IMPORT Cloudinary instance
 const User = require('../models/User');
-const BadgeDefinition = require('../models/BadgeDefinition'); // <-- IMPORT MODEL
-const ChallengeDefinition = require('../models/ChallengeDefinition'); // <-- IMPORT MODEL
-const { createNotification } = require('../services/notificationService'); // Keep for changeUserPassword etc.
+const BadgeDefinition = require('../models/BadgeDefinition');
+const ChallengeDefinition = require('../models/ChallengeDefinition');
+const { createNotification } = require('../services/notificationService');
 const { getGoldMarketSummary } = require('../utils/goldDataUtils');
 
 // Helper Function (Optional but recommended)
@@ -16,7 +18,7 @@ const sendErrorResponse = (res, statusCode, message, error) => {
     res.status(statusCode).json({ message: responseMessage });
 };
 
-// @desc    Get current user's profile (incl. transactions, gamification state, auto payments, default shipping address, profit calculation)
+// @desc    Get current user's profile (incl. transactions, gamification state, auto payments, default shipping address, profit calculation, profile picture)
 // @route   GET /api/users/me
 // @access  Private
 const getUserProfile = async (req, res) => {
@@ -101,6 +103,7 @@ const getUserProfile = async (req, res) => {
              address: user.address,
              city: user.city,
              nic: user.nic,
+             profilePictureUrl: user.profilePictureUrl || null, // <-- INCLUDE PROFILE PICTURE URL
              createdAt: user.createdAt,
              // Wallet Core Data
              goldBalanceGrams: user.goldBalanceGrams,
@@ -183,6 +186,7 @@ const updateUserProfile = async (req, res) => {
       city: updatedUser.city,
       nic: updatedUser.nic, // Include NIC
       defaultShippingAddress: updatedUser.defaultShippingAddress,
+      profilePictureUrl: updatedUser.profilePictureUrl || null, // Include profile picture in response
       // Avoid sending back balances/transactions on profile update
     });
 
@@ -262,6 +266,92 @@ const changeUserPassword = async (req, res) => {
         }
     }
 };
+
+// @desc    Upload or update user profile picture
+// @route   POST /api/users/profile-picture
+// @access  Private
+const uploadProfilePicture = async (req, res) => {
+    // 1. Validate Middleware User ID
+    if (!req.user || !req.user._id || !mongoose.Types.ObjectId.isValid(req.user._id)) {
+        return res.status(401).json({ message: 'Authentication error: Invalid user data.' });
+    }
+    const userId = req.user._id;
+
+    try {
+        // 2. Check if file was uploaded by multer
+        if (!req.file) {
+            return res.status(400).json({ message: 'No image file provided.' });
+        }
+
+        // 3. Get the URL from Cloudinary (stored in req.file.path by multer-storage-cloudinary)
+        const imageUrl = req.file.path;
+        console.log(`[UCP uploadProfilePicture] Cloudinary URL for user ${userId}: ${imageUrl}`);
+
+        // 4. Find user
+        const user = await User.findById(userId);
+        if (!user) {
+            // Should not happen if 'protect' middleware works, but safety check
+            console.error(`[UCP uploadProfilePicture] User ${userId} not found after successful auth.`);
+            // Optionally try to delete the uploaded image if user suddenly not found
+            // (consider edge cases and if this is necessary)
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
+        // 5. Optional: Delete old image from Cloudinary if one exists
+        const oldImageUrl = user.profilePictureUrl;
+        if (oldImageUrl) {
+             try {
+                // Extract public_id from the Cloudinary URL.
+                // This regex assumes the standard Cloudinary structure and your specific folder/naming convention.
+                // Example URL: https://res.cloudinary.com/<cloud_name>/image/upload/v167.../goldnest_profile_pics/user_60d..._167...jpg
+                // Need to extract: goldnest_profile_pics/user_60d..._167...
+                const publicIdMatch = oldImageUrl.match(/upload\/(?:v\d+\/)?(.*)\.\w+$/);
+                if (publicIdMatch && publicIdMatch[1]) {
+                    const publicId = publicIdMatch[1];
+                    // Basic check to avoid deleting unrelated files if URL format is unexpected
+                    if (publicId.startsWith('goldnest_profile_pics/')) {
+                        console.log(`[UCP uploadProfilePicture] Attempting to delete old Cloudinary image: ${publicId}`);
+                        // Use the imported cloudinary instance
+                        const deletionResult = await cloudinary.uploader.destroy(publicId);
+                        console.log(`[UCP uploadProfilePicture] Cloudinary deletion result for ${publicId}:`, deletionResult);
+                    } else {
+                        console.warn(`[UCP uploadProfilePicture] Skipping deletion - extracted publicId "${publicId}" does not match expected prefix.`);
+                    }
+                } else {
+                     console.warn(`[UCP uploadProfilePicture] Could not extract public_id from old URL: ${oldImageUrl}`);
+                }
+             } catch (deleteError) {
+                  console.error("[UCP ERROR uploadProfilePicture] Failed to delete old Cloudinary image:", deleteError);
+                  // Don't block the update if deletion fails, just log it
+             }
+        }
+
+        // 6. Update user's profilePictureUrl
+        user.profilePictureUrl = imageUrl;
+        await user.save();
+        console.log(`[UCP uploadProfilePicture] User ${userId} profile picture URL updated.`);
+
+        // 7. Respond with success and the new URL
+        res.json({
+            message: 'Profile picture uploaded successfully.',
+            profilePictureUrl: imageUrl,
+        });
+
+    } catch (error) {
+        console.error('[UCP ERROR uploadProfilePicture] Error:', error);
+         // Handle potential Multer errors (like file size limit)
+         if (error instanceof multer.MulterError) {
+             return res.status(400).json({ message: `File upload error: ${error.message}` });
+         }
+         // Handle custom file filter error (if defined in multer config)
+         if (error.message === 'Only image files are allowed!' || error.message === 'File type not allowed') { // Adapt error message if needed
+              return res.status(400).json({ message: error.message });
+         }
+         // Handle other potential errors (e.g., Cloudinary API errors during deletion - though we try/catch that)
+         sendErrorResponse(res, 500, 'Server error during profile picture upload.', error);
+    }
+};
+
 
 // @desc    Add a new automatic payment setting
 // @route   POST /api/users/autopayments
@@ -438,8 +528,11 @@ const deleteAutoPayment = async (req, res) => {
 
         // 4. Remove the subdocument using the remove() method on the subdocument itself
         // Note: Mongoose 8+ might require pulling by ID instead. Check docs if upgrading.
+        // Mongoose 6/7 way:
         await payment.remove(); // Mark for removal (or directly remove depending on Mongoose version/context)
-        // Alternatively, Mongoose 8+ might need: user.automaticPayments.pull({ _id: paymentId });
+
+        // Alternative for Mongoose 8+ (if `remove()` is deprecated on subdocs):
+        // user.automaticPayments.pull({ _id: paymentId });
 
         console.log(`[UCP deleteAutoPayment] Marked/Removed auto payment ${paymentId} for user ${userId}`);
 
@@ -460,9 +553,10 @@ const deleteAutoPayment = async (req, res) => {
 
 // Export all controller functions
 module.exports = {
-    getUserProfile,         // Updated function
+    getUserProfile,
     updateUserProfile,
     changeUserPassword,
+    uploadProfilePicture, // <-- EXPORT NEW CONTROLLER
     addAutoPayment,
     updateAutoPayment,
     deleteAutoPayment
