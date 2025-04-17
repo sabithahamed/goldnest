@@ -13,7 +13,9 @@
 html,
 body {
   max-width: 100vw;
+  height: 100%;
   overflow-x: hidden;
+  overflow-y: auto;
 }
 
 body {
@@ -1043,7 +1045,7 @@ body {
 /* --- Wallet Page --- */
 .wallet {
   padding: 15px 5%;
-  min-height: calc(100vh - 56px);
+  
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -2044,6 +2046,18 @@ body {
   font-size: 0.9rem;
   color: #666;
   margin: 0;
+}
+
+.btn-danger {
+  background-color: #F8B612;
+  color: #FFF;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-weight: 500;
+  font-size: 0.8rem;
+  border: 1px solid #F8B612;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Redeem Confirmation Section */

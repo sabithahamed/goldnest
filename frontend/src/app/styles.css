@@ -156,6 +156,7 @@ ul {
     box-sizing: border-box;
     margin-bottom: 50px;
     position: relative;
+    min-height: 300px;
 }
 
 @keyframes slideInfinite {
@@ -647,11 +648,10 @@ ul {
 
 /* --- Calculator Page Specific Styles --- */
 .calculator-page-section {
-    padding: 60px 5%;
+    padding: 20px 5%;
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: calc(100vh - 150px); /* Adjust based on navbar/footer height */
 }
 
 .calculator-container {

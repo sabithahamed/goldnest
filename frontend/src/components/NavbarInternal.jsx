@@ -390,7 +390,7 @@ export default function NavbarInternal() {
                              <Link href="/settings" className="btn btn-secondary btn-small mb-2 w-full block text-center" onClick={handleProfileActionClick}>
                                  Go to Settings
                              </Link>
-                             <button onClick={handleLogout} className="btn btn-danger btn-small w-full">
+                             <button onClick={handleLogout} className="btn btn-danger btn-small w-full ">
                                 Logout
                             </button>
                         </div>
