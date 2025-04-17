@@ -13,7 +13,7 @@ const transactionSchema = new mongoose.Schema({
   },
   amountGrams: { type: Number }, // Optional: Grams involved (investment, redemption, sell_gold)
   amountLKR: { type: Number },   // Optional: Value in LKR (investment, deposit, withdrawal, sell_gold, fee)
-  feeLKR: { type: Number, default: 0 }, // +++ ADDED: Store calculated fee for the transaction +++
+  feeLKR: { type: Number, default: 0 }, // Store calculated fee for the transaction
   date: { type: Date, default: Date.now }, // Date the transaction was initiated/recorded
   description: { type: String }, // General description or notes
   status: {
@@ -87,6 +87,10 @@ const userSchema = new mongoose.Schema({
   nic: { type: String },
   address: { type: String }, // Keep primary address if needed, separate from shipping
   city: { type: String },    // Keep primary city if needed
+  profilePictureUrl: { // <-- ADDED THIS FIELD
+      type: String,
+      default: null // Or an empty string '' if you prefer
+  },
   goldBalanceGrams: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative gold
   cashBalanceLKR: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative cash
 
@@ -210,5 +214,5 @@ userSchema.methods.getEmailVerificationOtp = function() {
 };
 
 // --- Create and Export User Model ---
-const User = mongoose.model('User', userSchema);
-module.exports = User;
+// Using the export style requested in the update instructions
+module.exports = mongoose.model('User', userSchema);
