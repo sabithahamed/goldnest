@@ -11,9 +11,10 @@ const notificationSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
-        enum: [ // <-- Updated enum list as per your request
+        enum: [ // <-- Updated enum list
+            // Existing types from old code
             'account_welcome',
-            'password_changed', // Assuming this replaces 'security_password_change' based on the new list
+            'password_changed',
             'transaction_buy',
             'transaction_sell',
             'transaction_deposit',
@@ -24,12 +25,15 @@ const notificationSchema = new mongoose.Schema({
             'redemption_delivered',
             'gamification_badge',
             'gamification_challenge',
-            'gamification_reward_claimed', // <--- Value ensured to be present
+            'gamification_reward_claimed', // Already present, ensured
             'price_alert',
             'market_movement',
-            'autopay_success', // Renamed from 'autopay_executed' based on the new list
-            'autopay_failed',
-            'security_password_change', // Note: This was also in the new list's comment section, included for completeness based on that snippet. Consider if you need both this and 'password_changed'.
+            'autopay_success',             // Already present, ensured
+            'autopay_failed',              // Already present, ensured
+            'security_password_change',    // Kept from old code as requested
+
+            // New types added based on "new changes"
+            'autopay_reminder'             // <-- ADDED
             // Add any other custom types you use here if needed
         ]
     },

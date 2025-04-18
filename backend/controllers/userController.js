@@ -348,7 +348,41 @@ const uploadProfilePicture = async (req, res) => {
     }
 };
 
+// @desc    Get user's automatic payment settings
+// @route   GET /api/users/autopayments
+// @access  Private
+const getAutoPayments = async (req, res) => {
+    // 1. Validate Middleware User ID
+    if (!req.user || !req.user._id || !mongoose.Types.ObjectId.isValid(req.user._id)) {
+        console.error("[UCP getAutoPayments] Invalid user object or ID from 'protect' middleware.");
+        return res.status(401).json({ message: 'Authentication error: Invalid user data.' });
+    }
+    const userId = req.user._id;
 
+    try {
+        // 2. Fetch only the automaticPayments field for the logged-in user
+        console.log(`[UCP Debug getAutoPayments] Fetching autopayments for user ${userId}.`);
+        const user = await User.findById(userId).select('automaticPayments');
+
+        if (!user) {
+            console.error(`[UCP getAutoPayments] User ${userId} not found in database.`);
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // 3. Return the array (or empty array if none exist)
+        res.json(user.automaticPayments || []);
+
+    } catch (error) {
+        // 4. Handle Errors
+        console.error(`[UCP ERROR getAutoPayments] Error fetching auto payments for user ${userId}:`, error);
+        sendErrorResponse(res, 500, `Server Error fetching auto payments for user ${userId}.`, error);
+    }
+};
+
+
+// ============================================================
+// ============= START: UPDATED addAutoPayment ================
+// ============================================================
 // @desc    Add a new automatic payment setting
 // @route   POST /api/users/autopayments
 // @access  Private
@@ -359,7 +393,7 @@ const addAutoPayment = async (req, res) => {
     }
     const userId = req.user._id;
 
-    const { frequency, amountLKR } = req.body;
+    const { frequency, amountLKR, dayOfMonth } = req.body; // Get potential dayOfMonth
     const validFrequencies = ['daily', 'weekly', 'monthly'];
     const MIN_AUTOPAY_AMOUNT = Number(process.env.MIN_AUTOPAY_AMOUNT_LKR) || 100;
     const MAX_AUTOPAYMENTS = Number(process.env.MAX_AUTOPAYMENTS_PER_USER) || 5;
@@ -370,13 +404,13 @@ const addAutoPayment = async (req, res) => {
     }
     const numericAmount = Number(amountLKR);
     if (isNaN(numericAmount) || numericAmount < MIN_AUTOPAY_AMOUNT) {
-        return res.status(400).json({ message: `Invalid amount. Must be >= Rs. ${MIN_AUTOPAY_AMOUNT}.` });
+        return res.status(400).json({ message: `Invalid amount. Must be a number >= Rs. ${MIN_AUTOPAY_AMOUNT}.` });
     }
     const finalAmount = Math.round(numericAmount * 100) / 100; // Round LKR
 
     try {
         // 3. Fetch fresh user data
-        const user = await User.findById(userId).populate('automaticPayments'); // Populate to check length accurately
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
         // 4. Check Limit
@@ -384,28 +418,53 @@ const addAutoPayment = async (req, res) => {
             return res.status(400).json({ message: `Maximum automatic payments (${MAX_AUTOPAYMENTS}) reached.` });
         }
 
-        // 5. Create and Add Subdocument
+        // 5. Create new payment object - relies on schema default for isActive: true
         const newPayment = {
-            _id: new mongoose.Types.ObjectId(), // Generate ID explicitly if needed before save
+            _id: new mongoose.Types.ObjectId(), // Pre-generate ID for finding it later
             frequency,
             amountLKR: finalAmount,
-            isActive: true, // Default new payments to active
-            // createdAt: new Date(), // Mongoose adds timestamps if schema configured
-            // nextRunDate: calculateNextRunDate(frequency), // Calculate if scheduler needs it immediately
+            // isActive: true // REMOVED - Rely on schema default
         };
+
+        // Only add dayOfMonth if frequency is monthly and value is provided & valid
+        if (frequency === 'monthly' && dayOfMonth !== undefined && dayOfMonth !== null) {
+             const day = parseInt(dayOfMonth, 10);
+             if (!isNaN(day) && day >= 1 && day <= 28) { // Limiting to 28 for simplicity across months
+                newPayment.dayOfMonth = day;
+             } else {
+                 console.warn(`[Add AutoPay] Invalid dayOfMonth (${dayOfMonth}) provided for monthly plan for user ${userId}. Ignoring.`);
+                 // Optionally return a 400 error here if dayOfMonth is mandatory/invalid for monthly
+                 // return res.status(400).json({ message: 'Invalid day of month (must be between 1-28) required for monthly frequency.' });
+             }
+        } else if (frequency === 'monthly' && (dayOfMonth === undefined || dayOfMonth === null)) {
+             console.warn(`[Add AutoPay] Monthly frequency selected but no dayOfMonth provided for user ${userId}. Plan created, but dayOfMonth will be null.`);
+             // Or return error if required:
+             // return res.status(400).json({ message: 'Day of month (1-28) is required for monthly frequency.' });
+        }
+
+
+        // Ensure array exists (good practice)
+        if (!Array.isArray(user.automaticPayments)) {
+            user.automaticPayments = [];
+        }
+
+        // 6. Add Subdocument
         user.automaticPayments.push(newPayment);
 
-        // 6. Save Parent Document
-        await user.save();
+        // 7. Mark Modified (Crucial for array pushes)
+        user.markModified('automaticPayments');
 
-        // 7. Respond with the newly added payment (which now has an _id)
-        // Find the specific payment added to ensure we return the correct one with its generated _id
+        // 8. Save Parent Document
+        await user.save();
+        console.log(`[UCP addAutoPayment] Added new auto payment for user ${userId}: ID ${newPayment._id}`);
+
+        // 9. Respond with the newly added payment (find it by ID to be safe)
         const addedPayment = user.automaticPayments.find(p => p._id.equals(newPayment._id));
         if (!addedPayment) {
-            // This shouldn't happen if save was successful, but good practice
+             console.error(`[UCP ERROR addAutoPayment] Could not find added auto payment ${newPayment._id} immediately after save for user ${userId}.`);
              return sendErrorResponse(res, 500, `Server Error finding added auto payment for user ${userId}.`, null);
         }
-        res.status(201).json(addedPayment);
+        res.status(201).json(addedPayment); // Send back the full object including defaults like isActive
 
     } catch (error) {
         if (error.name === 'ValidationError') {
@@ -415,86 +474,175 @@ const addAutoPayment = async (req, res) => {
         }
     }
 };
+// ============================================================
+// ============== END: UPDATED addAutoPayment =================
+// ============================================================
+
 
 // @desc    Update an existing automatic payment setting
 // @route   PUT /api/users/autopayments/:id
 // @access  Private
 const updateAutoPayment = async (req, res) => {
-    // 1. Validate Middleware User ID & Payment ID
-    if (!req.user || !req.user._id || !mongoose.Types.ObjectId.isValid(req.user._id)) {
+    const { id: paymentId } = req.params;
+    const userId = req.user._id; // Assuming 'protect' middleware adds user to req
+
+    // Validate User ID (added from previous pattern)
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
         return res.status(401).json({ message: 'Authentication error: Invalid user data.' });
     }
-    const userId = req.user._id;
-    const { id: paymentId } = req.params;
+
+    // --- V V V Check what's in the request body V V V ---
+    console.log(`[Update AutoPay] Received request for User: ${userId}, Plan: ${paymentId}, Body:`, req.body);
+    // --- ^ ^ ^ ---
+
+    // Basic validation for payment ID
     if (!mongoose.Types.ObjectId.isValid(paymentId)) {
         return res.status(400).json({ message: 'Invalid automatic payment ID format.' });
     }
 
-    // 2. Input Validation (only for fields provided)
-    const { frequency, amountLKR, isActive } = req.body;
-    const validFrequencies = ['daily', 'weekly', 'monthly'];
-    const MIN_AUTOPAY_AMOUNT = Number(process.env.MIN_AUTOPAY_AMOUNT_LKR) || 100;
+    // --- Refined Input Validation ---
+    const updateFields = {};
+    let hasUpdate = false;
 
-    let finalAmount;
-    if (amountLKR !== undefined) {
-        const numericAmount = Number(amountLKR);
-        if (isNaN(numericAmount) || numericAmount < MIN_AUTOPAY_AMOUNT) {
-            return res.status(400).json({ message: `Invalid amount. Must be >= Rs. ${MIN_AUTOPAY_AMOUNT}.` });
+    // Validate isActive ONLY if it's present in the request body
+    if (req.body.hasOwnProperty('isActive')) {
+        if (typeof req.body.isActive !== 'boolean') {
+            return res.status(400).json({ message: 'Invalid isActive value provided (must be true or false).' });
         }
-        finalAmount = Math.round(numericAmount * 100) / 100;
+        updateFields.isActive = req.body.isActive;
+        hasUpdate = true;
     }
-    if (frequency !== undefined && !validFrequencies.includes(frequency)) {
-        return res.status(400).json({ message: `Invalid frequency. Must be one of: ${validFrequencies.join(', ')}.` });
+
+    // Validate amountLKR ONLY if it's present
+    if (req.body.hasOwnProperty('amountLKR')) {
+        const MIN_AUTOPAY_AMOUNT = Number(process.env.MIN_AUTOPAY_AMOUNT_LKR) || 100;
+        const numericAmount = Number(req.body.amountLKR);
+        if (isNaN(numericAmount) || numericAmount < MIN_AUTOPAY_AMOUNT) {
+            return res.status(400).json({ message: `Invalid amount. Must be a number >= Rs. ${MIN_AUTOPAY_AMOUNT}.` });
+        }
+        updateFields.amountLKR = Math.round(numericAmount * 100) / 100; // Round LKR
+        hasUpdate = true;
     }
-    if (isActive !== undefined && typeof isActive !== 'boolean') {
-        return res.status(400).json({ message: 'Invalid value for isActive. Must be true or false.' });
+
+    // Validate frequency ONLY if it's present
+    if (req.body.hasOwnProperty('frequency')) {
+        const validFrequencies = ['daily', 'weekly', 'monthly'];
+        if (!validFrequencies.includes(req.body.frequency)) {
+             return res.status(400).json({ message: `Invalid frequency. Must be one of: ${validFrequencies.join(', ')}.` });
+        }
+        updateFields.frequency = req.body.frequency;
+        hasUpdate = true;
+        // Note: If frequency changes to/from monthly, we might need to handle dayOfMonth update/removal
     }
-    if (frequency === undefined && finalAmount === undefined && isActive === undefined) {
-        return res.status(400).json({ message: 'No valid fields provided for update.' });
+
+    // Validate dayOfMonth ONLY if it's present
+    if (req.body.hasOwnProperty('dayOfMonth')) {
+        // Allow null or a valid number (1-28)
+        if (req.body.dayOfMonth === null) {
+            updateFields.dayOfMonth = null;
+            hasUpdate = true;
+        } else {
+            const day = parseInt(req.body.dayOfMonth, 10);
+             if (!isNaN(day) && day >= 1 && day <= 28) {
+                 updateFields.dayOfMonth = day;
+                 hasUpdate = true;
+             } else {
+                 return res.status(400).json({ message: 'Invalid day of month (must be between 1-28 or null).' });
+             }
+        }
     }
+
+    // Check if any valid field was provided for update
+    if (!hasUpdate) {
+         return res.status(400).json({ message: 'No valid fields provided for update (accepted: isActive, amountLKR, frequency, dayOfMonth).' });
+    }
+    // --- End Refined Input Validation ---
 
     try {
-        // 3. Fetch fresh user data
-        const user = await User.findById(userId).populate('automaticPayments'); // Populate needed to find subdoc by ID
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        // 4. Find the subdocument using Mongoose's id() method
+        // Find the specific subdocument using the .id() method
         const payment = user.automaticPayments.id(paymentId);
         if (!payment) {
             return res.status(404).json({ message: 'Automatic payment setting not found.' });
         }
 
-        // 5. Apply updates to subdocument if values changed
-        let updated = false;
-        if (frequency !== undefined && payment.frequency !== frequency) {
-            payment.frequency = frequency; updated = true;
-            // payment.nextRunDate = calculateNextRunDate(frequency); // Optional: recalculate if needed
-        }
-        if (finalAmount !== undefined && payment.amountLKR !== finalAmount) {
-            payment.amountLKR = finalAmount; updated = true;
-        }
-        if (isActive !== undefined && payment.isActive !== isActive) {
-            payment.isActive = isActive; updated = true;
-            // if (!isActive) payment.nextRunDate = null; // Optional: clear next run if deactivated
+        console.log(`[Update AutoPay] Found Plan ${paymentId}. Current state:`, JSON.stringify(payment.toObject())); // Log current state
+
+        let updated = false; // Flag to track if any actual change occurred
+
+        // Apply updates only if the new value differs from the existing one
+        if (updateFields.hasOwnProperty('isActive') && payment.isActive !== updateFields.isActive) {
+            console.log(`[Update AutoPay] Toggling isActive for Plan ${paymentId} from ${payment.isActive} to ${updateFields.isActive}`);
+            payment.isActive = updateFields.isActive;
+            updated = true;
         }
 
-        // 6. Save Parent Document only if subdocument changed
+        if (updateFields.hasOwnProperty('amountLKR') && payment.amountLKR !== updateFields.amountLKR) {
+             console.log(`[Update AutoPay] Updating amountLKR for Plan ${paymentId} from ${payment.amountLKR} to ${updateFields.amountLKR}`);
+             payment.amountLKR = updateFields.amountLKR;
+             updated = true;
+        }
+
+        if (updateFields.hasOwnProperty('frequency') && payment.frequency !== updateFields.frequency) {
+            console.log(`[Update AutoPay] Updating frequency for Plan ${paymentId} from ${payment.frequency} to ${updateFields.frequency}`);
+            payment.frequency = updateFields.frequency;
+            // If changing FROM monthly, clear dayOfMonth
+            if (payment.frequency !== 'monthly') {
+                payment.dayOfMonth = null; // Or undefined, depending on schema
+            }
+            // If changing TO monthly, dayOfMonth might need to be set (but only if provided in updateFields)
+             // Optional: Recalculate nextRunDate if frequency changes
+             // payment.nextRunDate = calculateNextRunDate(updateFields.frequency);
+            updated = true;
+        }
+
+        // Apply dayOfMonth update only if frequency is monthly or becoming monthly
+        if (updateFields.hasOwnProperty('dayOfMonth') && payment.frequency === 'monthly' && payment.dayOfMonth !== updateFields.dayOfMonth) {
+             console.log(`[Update AutoPay] Updating dayOfMonth for Plan ${paymentId} from ${payment.dayOfMonth} to ${updateFields.dayOfMonth}`);
+             payment.dayOfMonth = updateFields.dayOfMonth;
+             updated = true;
+        }
+        // Handle case where frequency changed *to* monthly in this request AND dayOfMonth was also provided
+        if (updateFields.hasOwnProperty('frequency') && updateFields.frequency === 'monthly' && updateFields.hasOwnProperty('dayOfMonth') && payment.dayOfMonth !== updateFields.dayOfMonth) {
+            if (!updated) { // If frequency didn't actually change but dayOfMonth did
+                 console.log(`[Update AutoPay] Updating dayOfMonth for Plan ${paymentId} from ${payment.dayOfMonth} to ${updateFields.dayOfMonth}`);
+                 payment.dayOfMonth = updateFields.dayOfMonth;
+                 updated = true;
+            } // else: dayOfMonth was already set when frequency was processed
+        }
+
+
+        // Save Parent Document ONLY if subdocument actually changed value
         if (updated) {
-            // payment.updatedAt = new Date(); // Mongoose handles timestamps if schema configured
+            console.log(`[Update AutoPay] Change detected. Marking 'automaticPayments' as modified for User ${userId}.`);
+            // --- Explicitly mark the array as modified ---
+            // This is crucial for Mongoose to detect changes within subdocuments reliably.
+            user.markModified('automaticPayments');
+            // --- ---
             await user.save();
+            console.log(`[Update AutoPay] User ${userId} saved successfully after updating Plan ${paymentId}. New state:`, JSON.stringify(payment.toObject())); // Log state after save
+        } else {
+             console.log(`[Update AutoPay] No actual change in value detected for Plan ${paymentId}. Skipping save.`);
         }
 
-        // 7. Respond with the (potentially) updated payment object
-        res.json(payment);
+        // Respond with the potentially updated payment object
+        res.json(payment); // Send back the subdocument state *after* potential save
 
     } catch (error) {
-         if (error.name === 'ValidationError') {
-             sendErrorResponse(res, 400, "Validation Error updating auto payment.", error);
-        } else {
-             sendErrorResponse(res, 500, `Server Error updating auto payment ${paymentId} for user ${userId}.`, error);
+        console.error(`[Update AutoPay] Error updating auto payment ${paymentId} for user ${userId}:`, error);
+        if (error.name === 'ValidationError') {
+            // Extract specific validation errors if possible
+            const messages = Object.values(error.errors).map(e => e.message);
+            return res.status(400).json({ message: "Validation Error updating auto payment.", errors: messages });
         }
+        // Use the helper function for consistency or send generic message
+        sendErrorResponse(res, 500, `Server Error updating auto payment ${paymentId} for user ${userId}.`, error);
+        // res.status(500).json({ message: `Server Error updating auto payment` }); // Alternative generic response
     }
 };
+
 
 // @desc    Delete an automatic payment setting
 // @route   DELETE /api/users/autopayments/:id
@@ -512,32 +660,29 @@ const deleteAutoPayment = async (req, res) => {
 
     try {
         // 2. Fetch fresh user data
-        const user = await User.findById(userId).populate('automaticPayments'); // Populate to allow subdoc removal
+        // Note: Populate is not strictly needed for removal by pull, but harmless
+        const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        // 3. Find the subdocument
-        const payment = user.automaticPayments.id(paymentId);
-        if (!payment) {
-            // Already deleted or never existed - return success-like or 404. 404 is clearer.
+        // 3. Find the subdocument (optional, for checking existence first)
+        const paymentExists = user.automaticPayments.id(paymentId);
+        if (!paymentExists) {
+            // Already deleted or never existed - return 404.
             return res.status(404).json({ message: 'Automatic payment setting not found.' });
         }
 
-        // 4. Remove the subdocument
-        // Mongoose 6/7 way:
-        await payment.remove(); // Mark for removal (or directly remove depending on Mongoose version/context)
+        // 4. Remove the subdocument using 'pull'
+        user.automaticPayments.pull({ _id: paymentId }); // Mongoose pull operator
+        console.log(`[UCP deleteAutoPayment] Prepared removal of auto payment ${paymentId} for user ${userId}`);
 
-        // Alternative for Mongoose 8+ (if `remove()` is deprecated on subdocs):
-        // user.automaticPayments.pull({ _id: paymentId });
+        // 5. Mark Modified (Important for array pulls too)
+        user.markModified('automaticPayments');
 
-        console.log(`[UCP deleteAutoPayment] Marked/Removed auto payment ${paymentId} for user ${userId}`);
-
-
-        // 5. Save Parent Document to persist the removal
+        // 6. Save Parent Document to persist the removal
         await user.save();
         console.log(`[UCP deleteAutoPayment] Auto payment ${paymentId} deletion saved successfully for user ${userId}`);
 
-
-        // 6. Respond
+        // 7. Respond
         res.json({ message: 'Automatic payment deleted successfully.', deletedId: paymentId });
 
     } catch (error) {
@@ -552,7 +697,8 @@ module.exports = {
     updateUserProfile,
     changeUserPassword,
     uploadProfilePicture,
-    addAutoPayment,
+    getAutoPayments,
+    addAutoPayment, // Ensure the updated function is exported
     updateAutoPayment,
-    deleteAutoPayment
+    deleteAutoPayment,
 };

@@ -7,7 +7,8 @@ const {
     addAutoPayment,
     updateAutoPayment,
     deleteAutoPayment,
-    uploadProfilePicture // <-- IMPORT NEW CONTROLLER
+    uploadProfilePicture,
+    getAutoPayments // <-- IMPORTED NEW CONTROLLER
 } = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
 const { upload } = require('../config/cloudinary'); // <-- IMPORT MULTER UPLOAD MIDDLEWARE
@@ -18,29 +19,27 @@ const router = express.Router();
 // Ensures only authenticated users can access these routes
 router.use(protect);
 
-// Profile & Settings Routes
+// --- Profile & Settings Routes ---
 router.get('/me', getUserProfile); // GET /api/users/me - Fetch current user's profile
 router.put('/profile', updateUserProfile); // PUT /api/users/profile - Update user's profile details (name, email etc.)
 router.put('/change-password', changeUserPassword); // PUT /api/users/change-password - Change user's password
 
-// --- NEW PROFILE PICTURE UPLOAD ROUTE ---
-// This route handles uploading a new profile picture.
-// 1. `protect` middleware (already applied globally) ensures the user is logged in.
-// 2. `upload.single('profilePic')` middleware processes the file upload.
-//    - It expects a file field named 'profilePic' in the multipart/form-data request.
-//    - It uploads the file to Cloudinary (based on the 'upload' config).
-//    - It attaches file information (like the URL) to `req.file`.
-// 3. `uploadProfilePicture` controller handles updating the user's profile picture URL in the database.
+// --- Profile Picture Upload Route ---
+// Handles uploading a new profile picture via multipart/form-data
 router.post(
     '/profile-picture',
-    upload.single('profilePic'), // 'profilePic' must match the FormData key from frontend
-    uploadProfilePicture
+    upload.single('profilePic'), // Middleware: processes 'profilePic' field, uploads to Cloudinary
+    uploadProfilePicture        // Controller: updates user document with picture URL
 ); // POST /api/users/profile-picture
-// --- END NEW PROFILE PICTURE ROUTE ---
 
-// Automatic Payments CRUD Routes
-router.post('/autopayments', addAutoPayment); // POST /api/users/autopayments - Add a new automatic payment setting
+// --- Automatic Payments CRUD Routes ---
 
+// Routes for collection of auto payments (/api/users/autopayments)
+router.route('/autopayments')
+    .get(getAutoPayments)     // GET /api/users/autopayments - Fetch all auto payments for the user <-- NEW ROUTE
+    .post(addAutoPayment);    // POST /api/users/autopayments - Add a new automatic payment setting
+
+// Routes for a specific auto payment by ID (/api/users/autopayments/:id)
 router.route('/autopayments/:id')
     .put(updateAutoPayment)    // PUT /api/users/autopayments/:id - Update an existing automatic payment setting
     .delete(deleteAutoPayment); // DELETE /api/users/autopayments/:id - Delete an automatic payment setting

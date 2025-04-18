@@ -477,7 +477,7 @@ function GeneralSettingsComponent({
 }
 
 
-// --- Payment Settings Component (Unchanged from original provided code) ---
+// --- Payment Settings Component ---
 function PaymentSettingsComponent({ showSuccess }) {
     const [autoInvestPlans, setAutoInvestPlans] = useState([]);
     const [loadingPlans, setLoadingPlans] = useState(true);
@@ -486,12 +486,15 @@ function PaymentSettingsComponent({ showSuccess }) {
     const [newPlanData, setNewPlanData] = useState({
         amountLKR: '',
         frequency: 'daily',
-        date: '',
+        date: '', // Keep state field as 'date' for simplicity in form handling
         paymentMethod: 'wallet-cash',
     });
     const [savingPlan, setSavingPlan] = useState(false);
     const [togglingId, setTogglingId] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
+
+    // --- Base URL for Autopayments API ---
+    const AUTOPAY_API_URL = '/api/users/autopayments'; // <-- CORRECT BASE URL
 
     useEffect(() => {
         setLoadingPlans(true);
@@ -505,14 +508,15 @@ function PaymentSettingsComponent({ showSuccess }) {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
-        axios.get(`${backendUrl}/api/users/auto-invest`, config)
+        // --- Use Correct GET URL ---
+        axios.get(`${backendUrl}${AUTOPAY_API_URL}`, config)
             .then(response => setAutoInvestPlans(response.data || []))
             .catch(err => {
                 console.error("Error fetching auto-invest plans:", err);
                 setErrorPlans(err.response?.data?.message || "Could not load auto-invest plans.");
             })
             .finally(() => setLoadingPlans(false));
-    }, []);
+    }, []); // Empty dependency array is correct here
 
     const handleAddPlan = async (e) => {
         e.preventDefault();
@@ -522,7 +526,7 @@ function PaymentSettingsComponent({ showSuccess }) {
             return;
         }
         if (newPlanData.frequency === 'monthly' && !newPlanData.date) {
-            setErrorPlans("Please select a date for monthly auto-investment.");
+            setErrorPlans("Please select a day of the month for monthly auto-investment.");
             return;
         }
         setSavingPlan(true);
@@ -537,16 +541,24 @@ function PaymentSettingsComponent({ showSuccess }) {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
         try {
+            // Create payload, converting 'date' state to 'dayOfMonth' for the API
             const payload = {
                 amountLKR: amount,
                 frequency: newPlanData.frequency,
-                date: newPlanData.frequency === 'monthly' ? Number(newPlanData.date) : undefined,
                 paymentMethod: newPlanData.paymentMethod,
+                // Add dayOfMonth only if frequency is monthly and date is selected
+                dayOfMonth: newPlanData.frequency === 'monthly' ? Number(newPlanData.date) : undefined,
             };
-            const { data: addedPlan } = await axios.post(`${backendUrl}/api/users/auto-invest`, payload, config);
+             // Remove undefined fields potentially not expected by backend (like dayOfMonth when not monthly)
+            Object.keys(payload).forEach(key => payload[key] === undefined && delete payload[key]);
+
+
+            // --- Use Correct POST URL ---
+            const { data: addedPlan } = await axios.post(`${backendUrl}${AUTOPAY_API_URL}`, payload, config);
+
             setAutoInvestPlans(prev => [...prev, addedPlan]);
             setShowAddForm(false);
-            setNewPlanData({ amountLKR: '', frequency: 'daily', date: '', paymentMethod: 'wallet-cash' });
+            setNewPlanData({ amountLKR: '', frequency: 'daily', date: '', paymentMethod: 'wallet-cash' }); // Reset form
             showSuccess("Auto-Invest plan added successfully!");
         } catch (err) {
             setErrorPlans(err.response?.data?.message || "Failed to add auto-invest plan.");
@@ -569,7 +581,8 @@ function PaymentSettingsComponent({ showSuccess }) {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
         try {
-            const { data: updatedPlan } = await axios.put(`${backendUrl}/api/users/auto-invest/${id}`, { isActive: !currentStatus }, config);
+            // --- Use Correct PUT URL ---
+            const { data: updatedPlan } = await axios.put(`${backendUrl}${AUTOPAY_API_URL}/${id}`, { isActive: !currentStatus }, config);
             setAutoInvestPlans(prev => prev.map(plan => plan._id === id ? updatedPlan : plan));
             showSuccess(`Auto-Invest plan ${updatedPlan.isActive ? 'activated' : 'paused'}.`);
         } catch (err) {
@@ -594,7 +607,8 @@ function PaymentSettingsComponent({ showSuccess }) {
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
         try {
-            await axios.delete(`${backendUrl}/api/users/auto-invest/${id}`, config);
+            // --- Use Correct DELETE URL ---
+            await axios.delete(`${backendUrl}${AUTOPAY_API_URL}/${id}`, config);
             setAutoInvestPlans(prev => prev.filter(plan => plan._id !== id));
             showSuccess("Auto-Invest plan deleted.");
         } catch (err) {
@@ -618,8 +632,8 @@ function PaymentSettingsComponent({ showSuccess }) {
                 <label htmlFor="default-payment">Default Purchase Method</label>
                 <select id="default-payment" className={`${styles.inputField} bg-white`}>
                     <option value="wallet-cash">Wallet Cash</option>
-                    <option value="payhere">PayHere (Card/Bank)</option>
-                    <option value="paypal">PayPal</option>
+                    <option value="payhere" disabled>PayHere (Card/Bank) - Coming Soon</option>
+                    <option value="paypal" disabled>PayPal - Coming Soon</option>
                 </select>
             </div>
             <div className={styles.formGroup}>
@@ -666,17 +680,18 @@ function PaymentSettingsComponent({ showSuccess }) {
                                 <option value="monthly">Monthly</option>
                             </select>
                         </div>
+                        {/* Correctly show date select ONLY for monthly */}
                         {newPlanData.frequency === 'monthly' && (
                             <div className={styles.formGroup}>
-                                <label htmlFor="auto-invest-date">Select Date</label>
+                                <label htmlFor="auto-invest-date">Day of Month</label> {/* Changed label */}
                                 <select
-                                    id="auto-invest-date"
-                                    value={newPlanData.date}
+                                    id="auto-invest-date" // Keep ID same as state key for simplicity
+                                    value={newPlanData.date} // State name 'date' holds the day number
                                     onChange={(e) => setNewPlanData({ ...newPlanData, date: e.target.value })}
                                     className={`${styles.inputField} bg-white`}
-                                    required // Make required if monthly is selected
+                                    required // Make it required if monthly is selected
                                 >
-                                    <option value="">Select Day</option>
+                                    <option value="">Select Day (1-28)</option>
                                     {[...Array(28)].map((_, i) => ( // Limit to 28 for safety
                                         <option key={i + 1} value={i + 1}>{i + 1}</option>
                                     ))}
@@ -692,8 +707,9 @@ function PaymentSettingsComponent({ showSuccess }) {
                                 className={`${styles.inputField} bg-white`}
                             >
                                 <option value="wallet-cash">Wallet Cash</option>
-                                <option value="payhere">PayHere (Card/Bank)</option>
-                                <option value="paypal">PayPal</option>
+                                {/* Future options if implemented */}
+                                {/* <option value="payhere" disabled>PayHere (Card/Bank)</option> */}
+                                {/* <option value="paypal" disabled>PayPal</option> */}
                             </select>
                         </div>
                         <div className={styles.actionButtons}>
@@ -708,53 +724,59 @@ function PaymentSettingsComponent({ showSuccess }) {
                 )}
                 <h3 className={styles.sectionSubheading}>Your Auto-Invest Plans</h3>
                 <div className={styles.autoInvestList}>
-                    {loadingPlans ? (
-                        <p className="text-gray-500">Loading plans...</p>
-                    ) : autoInvestPlans.length > 0 ? (
-                        autoInvestPlans.map(plan => (
+                     {loadingPlans ? (
+                         <p className="text-gray-500 dark:text-gray-400 text-center p-4">Loading plans...</p>
+                     ) : errorPlans && !autoInvestPlans.length ? ( // Show error only if list is empty and error exists
+                         <p className={`${styles.error} text-center p-4`}>{errorPlans}</p>
+                     ) : autoInvestPlans.length > 0 ? (
+                         autoInvestPlans.map(plan => (
                             <div key={plan._id} className={styles.autoInvestItem}>
-                                <div>
-                                    <p className={!plan.isActive ? styles.inactive : ''}>
-                                        {formatCurrency(plan.amountLKR)} {plan.frequency}
-                                        {plan.frequency === 'monthly' && plan.date ? ` on day ${plan.date}` : ''}
-                                    </p>
-                                    <p className={`text-xs text-gray-500 ${!plan.isActive ? styles.inactive : ''}`}>
-                                        Payment: {plan.paymentMethod === 'wallet-cash' ? 'Wallet Cash' : plan.paymentMethod === 'payhere' ? 'PayHere' : 'PayPal'} | Status: {plan.isActive ? 'Active' : 'Paused'}
-                                    </p>
-                                </div>
-                                <div className={styles.autoInvestActions}>
-                                    <button
-                                        onClick={() => handleToggleActive(plan._id, plan.isActive)}
-                                        disabled={togglingId === plan._id || deletingId === plan._id}
-                                        className={`text-xs font-medium px-2 py-1 rounded transition-colors duration-150 ${
-                                            plan.isActive
-                                                ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                        } ${togglingId === plan._id ? 'opacity-50 cursor-wait' : ''}`}
-                                    >
-                                        {togglingId === plan._id ? '...' : (plan.isActive ? 'Pause' : 'Activate')}
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeletePlan(plan._id)}
-                                        disabled={togglingId === plan._id || deletingId === plan._id}
-                                        className={`text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded transition-colors duration-150 hover:bg-red-100 ${deletingId === plan._id ? 'opacity-50 cursor-wait' : ''}`}
-                                        title="Delete Plan"
-                                    >
-                                        {deletingId === plan._id ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-trash-alt"></i>}
-                                        <span className="hidden sm:inline ml-1">{deletingId === plan._id ? '' : 'Delete'}</span>
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="text-gray-500 text-center p-4 border rounded border-dashed">You haven't set any auto-invest plans yet.</p>
-                    )}
+                                 <div>
+                                      <p className={`font-medium ${!plan.isActive ? 'text-gray-400 line-through dark:text-gray-500' : 'text-gray-800 dark:text-gray-200'}`}>
+                                           {formatCurrency(plan.amountLKR)} {plan.frequency}
+                                           {/* Display dayOfMonth if available */}
+                                           {plan.frequency === 'monthly' && plan.dayOfMonth ? ` on day ${plan.dayOfMonth}` : ''}
+                                      </p>
+                                      <p className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${!plan.isActive ? 'line-through' : ''}`}>
+                                          {/* Display payment method if available, fallback or simple text */}
+                                          Payment: {plan.paymentMethod === 'wallet-cash' ? 'Wallet Cash' : (plan.paymentMethod || 'N/A')} | Status: {plan.isActive ? 'Active' : 'Paused'}
+                                      </p>
+                                  </div>
+                                  <div className={styles.autoInvestActions}>
+                                      {/* Toggle Button */}
+                                      <button
+                                          onClick={() => handleToggleActive(plan._id, plan.isActive)}
+                                          disabled={togglingId === plan._id || deletingId === plan._id}
+                                          className={`text-xs font-medium px-2 py-1 rounded transition-colors duration-150 ${
+                                              plan.isActive
+                                                  ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-700 dark:text-yellow-100 dark:hover:bg-yellow-600'
+                                                  : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-700 dark:text-green-100 dark:hover:bg-green-600'
+                                          } ${togglingId === plan._id ? 'opacity-50 cursor-wait' : ''}`}
+                                      >
+                                          {togglingId === plan._id ? '...' : (plan.isActive ? 'Pause' : 'Activate')}
+                                      </button>
+                                      {/* Delete Button */}
+                                      <button
+                                          onClick={() => handleDeletePlan(plan._id)}
+                                          disabled={togglingId === plan._id || deletingId === plan._id}
+                                          className={`text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded transition-colors duration-150 hover:bg-red-100 dark:hover:bg-red-700 dark:hover:text-white ${deletingId === plan._id ? 'opacity-50 cursor-wait' : ''}`}
+                                          title="Delete Plan"
+                                      >
+                                          {deletingId === plan._id ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-trash-alt"></i>}
+                                          <span className="hidden sm:inline ml-1">{deletingId === plan._id ? '' : 'Delete'}</span>
+                                      </button>
+                                  </div>
+                             </div>
+                         ))
+                     ) : (
+                         <p className="text-gray-500 dark:text-gray-400 text-center p-4 border rounded border-dashed border-gray-300 dark:border-gray-600">You haven't set any auto-invest plans yet.</p>
+                     )}
                 </div>
             </div>
-            <p className="text-sm text-gray-500 my-4">Note: Default method selection is simulated.</p>
+            <p className="text-sm text-gray-500 my-4">Note: Default method selection is simulated for display.</p>
             <div className={styles.actionButtons}>
-                <button className={`${styles.btnPrimary}`} onClick={() => showSuccess("Payment settings saved (Simulated).")}>Save Changes</button>
-                <button className={`${styles.btnSecondary}`} onClick={() => alert("Resetting payment settings (Simulated).")}>Reset</button>
+                <button className={`${styles.btnPrimary}`} onClick={() => showSuccess("Default payment settings saved (Simulated).")}>Save Defaults</button>
+                {/* <button className={`${styles.btnSecondary}`} onClick={() => alert("Resetting default payment settings (Simulated).")}>Reset Defaults</button> */}
             </div>
         </div>
     );
