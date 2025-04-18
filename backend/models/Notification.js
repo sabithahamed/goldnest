@@ -6,45 +6,62 @@ const notificationSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true,
-        index: true
+        index: true // Index for efficient user-specific lookups
     },
     type: {
         type: String,
-        enum: [
-            'price_alert',       // User-defined price alert triggered
-            'market_movement',   // Significant system-detected market change
-            'ai_insight',        // New AI suggestion available (optional)
+        required: true,
+        enum: [ // <-- Updated enum list as per your request
+            'account_welcome',
+            'password_changed', // Assuming this replaces 'security_password_change' based on the new list
             'transaction_buy',
             'transaction_sell',
             'transaction_deposit',
-            'transaction_withdrawal_request', // Submitted
-            'transaction_withdrawal_completed', // Processed (requires later update)
+            'transaction_withdrawal_request',
+            'transaction_withdrawal_completed',
             'redemption_requested',
-            'redemption_shipped',  // Requires later update
-            'redemption_delivered', // Requires later update
+            'redemption_shipped',
+            'redemption_delivered',
             'gamification_badge',
             'gamification_challenge',
-            'autopay_reminder',     // Requires job
-            'autopay_executed',     // Requires job
-            'autopay_failed',       // Requires job
-            'security_password_change',
-            'security_login',       // Optional: New device/location login
-            'account_welcome',      // After email verification
-            'general_info'          // For other system messages
-        ],
+            'gamification_reward_claimed', // <--- Value ensured to be present
+            'price_alert',
+            'market_movement',
+            'autopay_success', // Renamed from 'autopay_executed' based on the new list
+            'autopay_failed',
+            'security_password_change', // Note: This was also in the new list's comment section, included for completeness based on that snippet. Consider if you need both this and 'password_changed'.
+            // Add any other custom types you use here if needed
+        ]
+    },
+    title: {
+        type: String,
         required: true
     },
-    title: { type: String, required: true },
-    message: { type: String, required: true },
-    isRead: { type: Boolean, default: false, index: true },
-    link: { type: String }, // Optional in-app link (e.g., /wallet, /orders/xyz)
-    metadata: { type: mongoose.Schema.Types.Mixed }, // Store extra data { price: X, badgeId: Y }
+    message: {
+        type: String,
+        required: true
+    },
+    isRead: {
+        type: Boolean,
+        default: false,
+        index: true // Index for efficient querying of read/unread status
+    },
+    link: {
+        type: String // Optional in-app link (e.g., /wallet, /orders/xyz, /gamification/rewards)
+    },
+    metadata: {
+        type: mongoose.Schema.Types.Mixed // Store extra context-specific data, e.g., { price: 100, badgeId: 'xyz', rewardId: 'abc' }
+    },
 }, {
-    timestamps: true // Adds createdAt, updatedAt
+    timestamps: true // Automatically adds createdAt and updatedAt fields
 });
 
-// Optional: Index for faster querying of unread notifications per user
+// Compound index for faster querying of unread notifications per user, sorted by creation date
 notificationSchema.index({ userId: 1, isRead: 1, createdAt: -1 });
 
+// Optional: If you frequently query only by type for a user
+// notificationSchema.index({ userId: 1, type: 1 });
+
 const Notification = mongoose.model('Notification', notificationSchema);
+
 module.exports = Notification;

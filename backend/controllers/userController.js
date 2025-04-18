@@ -2,11 +2,12 @@
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const multer = require('multer'); // <-- IMPORT Multer for error handling
-const cloudinary = require('../config/cloudinary'); // <-- IMPORT Cloudinary instance
+const multer = require('multer'); // For error handling in upload
+const cloudinary = require('../config/cloudinary'); // For deleting old images
 const User = require('../models/User');
-const BadgeDefinition = require('../models/BadgeDefinition');
-const ChallengeDefinition = require('../models/ChallengeDefinition');
+// --- Import the updated gamification helpers ---
+const { getActiveChallenges, getAllBadges } = require('../config/gamification');
+// --- Other services and utilities ---
 const { createNotification } = require('../services/notificationService');
 const { getGoldMarketSummary } = require('../utils/goldDataUtils');
 
@@ -30,29 +31,20 @@ const getUserProfile = async (req, res) => {
     const userId = req.user._id;
 
     try {
-        // 2. Fetch User Data AND Gamification Definitions in parallel
-        const [user, allBadgeDefs, activeChallengeDefs] = await Promise.all([
-            User.findById(userId)
-                .populate('transactions')       // Populate for calculations & response
-                .populate('automaticPayments') // Populate for response
-                .select('-password'),          // Exclude password
-            BadgeDefinition.find({ isActive: true }).lean(), // Use .lean() for plain JS objects
-            ChallengeDefinition.find({ isActive: true }).lean() // Use .lean()
-        ]);
-        // --- END Fetch ---
+        // 2. Fetch User Data (without gamification definitions)
+        const user = await User.findById(userId)
+            .populate('transactions')       // Populate for calculations & response
+            .populate('automaticPayments') // Populate for response
+            .select('-password');          // Exclude password
 
         if (!user) {
             console.error(`[UCP getUserProfile] User ${userId} not found in database.`);
             return res.status(404).json({ message: 'User not found.' });
         }
-        // Log warnings if definitions couldn't be fetched, but don't fail the request
-        if (!allBadgeDefs) console.warn("[UCP getUserProfile] Failed to fetch badge definitions.");
-        if (!activeChallengeDefs) console.warn("[UCP getUserProfile] Failed to fetch challenge definitions.");
 
         console.log(`[UCP Debug getUserProfile] Fetched user ${userId} state successfully.`);
 
         // --- V V V PROFIT CALCULATION (Keep this logic) V V V ---
-
         let totalInvestedLKR = 0;
         let totalGramsPurchased = 0;
 
@@ -86,14 +78,22 @@ const getUserProfile = async (req, res) => {
         }
         // --- ^ ^ ^ END PROFIT CALCULATION ^ ^ ^ ---
 
-        // 3. Prepare Response Data
+        // 3. Get ACTIVE Gamification Definitions from Config Helpers
+        const activeBadgesDefs = getAllBadges(); // Get all badges defined in config
+        const activeChallengesDefs = getActiveChallenges(); // Get only active challenges from config
+
+        // Log warnings if definitions couldn't be fetched (unlikely with config, but good practice)
+        if (!activeBadgesDefs) console.warn("[UCP getUserProfile] Failed to get badge definitions from config.");
+        if (!activeChallengesDefs) console.warn("[UCP getUserProfile] Failed to get challenge definitions from config.");
+
+        // 4. Prepare Response Data
         const sortedTransactions = (user.transactions || [])
             ?.filter(tx => tx && tx.date) // Ensure transaction and date exist
             ?.sort((a, b) => new Date(b.date) - new Date(a.date)) || [];
 
         console.log(`[UCP Debug getUserProfile] Responding for user ${user._id}. AvgPrice=${averagePurchasePricePerGram.toFixed(2)}, CurrentValue=${currentValueLKR.toFixed(2)}, Profit=${overallProfitLKR.toFixed(2)}`);
 
-        // 4. Send Response with current user state, calculated values, AND DB definitions
+        // 5. Send Response with user state, calculated values, AND config-based definitions
         res.json({
              // Basic Info
              _id: user._id,
@@ -103,7 +103,7 @@ const getUserProfile = async (req, res) => {
              address: user.address,
              city: user.city,
              nic: user.nic,
-             profilePictureUrl: user.profilePictureUrl || null, // <-- INCLUDE PROFILE PICTURE URL
+             profilePictureUrl: user.profilePictureUrl || null,
              createdAt: user.createdAt,
              // Wallet Core Data
              goldBalanceGrams: user.goldBalanceGrams,
@@ -124,10 +124,10 @@ const getUserProfile = async (req, res) => {
              completedChallengeIds: user.completedChallengeIds || [],
              starCount: user.starCount || 0,
 
-             // Gamification Definitions (fetched from DB)
+             // Gamification Definitions (from config)
              gamificationDefs: {
-                 badges: allBadgeDefs || [], // Send fetched definitions (fallback to empty array)
-                 challenges: activeChallengeDefs || [] // Send fetched definitions (fallback to empty array)
+                 badges: activeBadgesDefs || [],      // Use definitions from config helper
+                 challenges: activeChallengesDefs || [] // Use definitions from config helper
              }
          });
 
@@ -302,16 +302,12 @@ const uploadProfilePicture = async (req, res) => {
         if (oldImageUrl) {
              try {
                 // Extract public_id from the Cloudinary URL.
-                // This regex assumes the standard Cloudinary structure and your specific folder/naming convention.
-                // Example URL: https://res.cloudinary.com/<cloud_name>/image/upload/v167.../goldnest_profile_pics/user_60d..._167...jpg
-                // Need to extract: goldnest_profile_pics/user_60d..._167...
                 const publicIdMatch = oldImageUrl.match(/upload\/(?:v\d+\/)?(.*)\.\w+$/);
                 if (publicIdMatch && publicIdMatch[1]) {
                     const publicId = publicIdMatch[1];
                     // Basic check to avoid deleting unrelated files if URL format is unexpected
-                    if (publicId.startsWith('goldnest_profile_pics/')) {
+                    if (publicId.startsWith('goldnest_profile_pics/')) { // Ensure this prefix matches your Cloudinary folder setup
                         console.log(`[UCP uploadProfilePicture] Attempting to delete old Cloudinary image: ${publicId}`);
-                        // Use the imported cloudinary instance
                         const deletionResult = await cloudinary.uploader.destroy(publicId);
                         console.log(`[UCP uploadProfilePicture] Cloudinary deletion result for ${publicId}:`, deletionResult);
                     } else {
@@ -526,8 +522,7 @@ const deleteAutoPayment = async (req, res) => {
             return res.status(404).json({ message: 'Automatic payment setting not found.' });
         }
 
-        // 4. Remove the subdocument using the remove() method on the subdocument itself
-        // Note: Mongoose 8+ might require pulling by ID instead. Check docs if upgrading.
+        // 4. Remove the subdocument
         // Mongoose 6/7 way:
         await payment.remove(); // Mark for removal (or directly remove depending on Mongoose version/context)
 
@@ -556,7 +551,7 @@ module.exports = {
     getUserProfile,
     updateUserProfile,
     changeUserPassword,
-    uploadProfilePicture, // <-- EXPORT NEW CONTROLLER
+    uploadProfilePicture,
     addAutoPayment,
     updateAutoPayment,
     deleteAutoPayment

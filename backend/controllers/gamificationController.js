@@ -1,21 +1,21 @@
 // backend/controllers/gamificationController.js
-const mongoose = require('mongoose'); // Needed for transaction ID and ObjectId validation
+const mongoose = require('mongoose'); // Needed for transaction ID, ObjectId validation
 const User = require('../models/User');
-const ChallengeDefinition = require('../models/ChallengeDefinition'); // <-- IMPORTED MODEL
+const { CHALLENGES } = require('../config/gamification'); // Use config directly
 const { createNotification } = require('../services/notificationService'); // Import notification service
 
-// Helper for currency formatting (ensure this matches your project's standard if you have one elsewhere)
+// Helper for currency formatting (Robust version from original code)
 const formatCurrency = (value, currency = 'LKR', locale = 'en-LK') => {
     // Handle potential non-numeric input gracefully
     const numericValue = Number(value);
     if (isNaN(numericValue)) {
-        console.warn(`formatCurrency received non-numeric value: ${value}`);
-        return String(value); // Return original string or a placeholder
+        console.warn(`[formatCurrency] Received non-numeric value: ${value}`);
+        return String(value) || `${currency} ???`; // Avoid formatting non-numbers
     }
     try {
         return new Intl.NumberFormat(locale, { style: 'currency', currency: currency }).format(numericValue);
     } catch (error) {
-        console.error(`Error formatting currency (value: ${value}, currency: ${currency}, locale: ${locale}):`, error);
+        console.error(`[formatCurrency] Error formatting (value: ${value}, currency: ${currency}, locale: ${locale}):`, error);
         // Fallback formatting
         return `${currency} ${numericValue.toFixed(2)}`;
     }
@@ -27,64 +27,102 @@ const formatCurrency = (value, currency = 'LKR', locale = 'en-LK') => {
 // @access  Private
 const claimChallengeReward = async (req, res) => {
     const { challengeId } = req.params; // This is the string ID like 'MONTHLY_5K'
-    const userId = req.user._id; // Assumes authenticated user via middleware
+    const userId = req.user?._id; // Assumes authenticated user via middleware
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-        return res.status(400).json({ message: 'Invalid user ID format.' });
+    console.log(`[Claim Reward] User ${userId} attempting to claim challenge ${challengeId}`); // Log entry
+
+    // --- Basic Input Validation ---
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+        console.log(`[Claim Reward] Invalid or missing user ID: ${userId}`);
+        return res.status(400).json({ message: 'Invalid or missing user ID.' });
     }
-    // No format validation needed for string challengeId unless you have specific rules
+    // No specific format validation needed for string challengeId unless you have specific rules
 
     try {
-        // --- Fetch User AND Challenge Definition Concurrently ---
-        const [user, challenge] = await Promise.all([
-            User.findById(userId),
-            // Find active definition by the unique string ID field
-            ChallengeDefinition.findOne({ challengeId: challengeId, isActive: true })
-        ]);
-        // --- END Fetch ---
-
+        // --- Fetch User ---
+        const user = await User.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: "User not found." });
-        }
-        // Check if the challenge definition was found and is active
-        if (!challenge) {
-            return res.status(404).json({ message: "Challenge definition not found or is currently inactive." });
+             console.log(`[Claim Reward] User ${userId} not found.`);
+             return res.status(404).json({ message: "User not found." });
         }
 
-        // Ensure user's challenge-related fields exist
+        // --- Get Challenge Definition ---
+        const challenge = CHALLENGES[challengeId]; // Get definition directly from config object
+
+        // Check if challenge exists in config AND if it's currently active
+        const now = new Date();
+        const isActive = challenge && // Does the challenge definition exist?
+                         (challenge.isActive !== false) && // Is it explicitly not inactive? (Defaults to active if undefined)
+                         (!challenge.startDate || new Date(challenge.startDate) <= now) && // Is start date in the past (or not set)?
+                         (!challenge.endDate || new Date(challenge.endDate) >= now);      // Is end date in the future (or not set)?
+
+        if (!challenge || !isActive) {
+             const challengeIdentifier = challenge ? `"${challenge.name}" (${challengeId})` : challengeId;
+             console.log(`[Claim Reward] Challenge ${challengeIdentifier} not found or inactive for user ${userId}.`);
+            return res.status(404).json({ message: "Challenge definition not found or is not active." });
+        }
+
+        // --- Ensure user's challenge-related fields exist (defensive programming) ---
         user.completedChallengeIds = user.completedChallengeIds || [];
-        user.challengeProgress = user.challengeProgress || new Map();
+        // challengeProgress handled more robustly below
         user.transactions = user.transactions || []; // Ensure transactions array exists
 
-        // Check if challenge is actually completed by user
-        // Use challenge.challengeId from the fetched definition object
-        if (!user.completedChallengeIds.includes(challenge.challengeId)) {
+        // --- Check Completion Status ---
+        if (!user.completedChallengeIds.includes(challengeId)) {
+            console.log(`[Claim Reward] User ${userId} has not completed challenge ${challengeId}.`);
             return res.status(400).json({ message: "Challenge not completed yet." });
         }
 
-        // Check if already claimed
-        // Use challenge.challengeId for consistency
-        if (user.challengeProgress.get(`${challenge.challengeId}_claimed`) === true) {
-            return res.status(400).json({ message: "Reward already claimed." });
+        // --- V V V REVISED & ROBUST CLAIM CHECK V V V ---
+        let progressMap = user.challengeProgress;
+        // Ensure challengeProgress exists and is treated as a Map
+        if (!progressMap) {
+            user.challengeProgress = new Map();
+            progressMap = user.challengeProgress;
+            console.log(`[Claim Reward] Initialized challengeProgress Map for user ${userId}.`);
+        } else if (!(progressMap instanceof Map)) {
+            // If somehow stored as object, convert it
+            console.warn(`[Claim Reward] Converting challengeProgress from Object to Map for user ${userId}.`);
+            progressMap = new Map(Object.entries(progressMap || {})); // Use || {} for safety
+            user.challengeProgress = progressMap; // Ensure user object has the Map
         }
 
+        const claimedKey = `${challengeId}_claimed`;
+        const claimedValue = progressMap.get(claimedKey);
+
+        // Check if the value is *specifically* boolean true OR the number 1
+        // This handles the current bad data (1) and the correct future state (true)
+        const alreadyClaimed = claimedValue === true || claimedValue === 1;
+
+        console.log(`[Claim Reward] Checking claim status for ${challengeId}. Key: ${claimedKey}, Value: ${claimedValue}, Type: ${typeof claimedValue}, Already Claimed Check Result: ${alreadyClaimed}`); // Added Type log
+
+        // Log a warning if the data type is wrong (number 1 instead of boolean true)
+        if (claimedValue === 1) {
+            console.warn(`[Claim Reward] WARNING: Claimed flag for ${userId}, challenge ${challengeId} is stored as number 1, should be boolean true.`);
+        }
+
+        if (alreadyClaimed) {
+            console.log(`[Claim Reward] BLOCKING Re-claim: User ${userId}, Challenge ${challengeId}. Existing value: ${claimedValue}`);
+            return res.status(400).json({ message: "Reward already claimed." });
+        }
+        // --- ^ ^ ^ END REVISED CLAIM CHECK ^ ^ ^ ---
+
+
+        // --- Apply Reward Logic ---
         let notificationMessage = `Reward for "${challenge.name}" claimed! `;
         let rewardGranted = false; // Flag to track if any reward action was actually taken
         let transactionAdded = false; // Flag to track if a transaction was added
 
-        // --- Apply Actual Reward Based on Type (using data from the fetched 'challenge' object) ---
         switch (challenge.rewardType) {
             case 'BONUS_GOLD':
                 if (challenge.rewardValue > 0) {
                     const rewardAmount = Number(challenge.rewardValue);
                     if (!isNaN(rewardAmount)) {
                         user.goldBalanceGrams = (user.goldBalanceGrams || 0) + rewardAmount;
-                        // Add a transaction record for the bonus gold
                         user.transactions.push({
-                            _id: new mongoose.Types.ObjectId(),
+                            _id: new mongoose.Types.ObjectId(), // Generate new ID
                             type: 'bonus',
                             amountGrams: rewardAmount,
-                            // Use challenge.name from the DB object
                             description: `Challenge Reward: ${challenge.name} (+${rewardAmount.toFixed(4)}g)`,
                             status: 'completed',
                             timestamp: new Date()
@@ -93,13 +131,12 @@ const claimChallengeReward = async (req, res) => {
                         rewardGranted = true;
                         transactionAdded = true;
                     } else {
-                        // Use challenge.challengeId for logging clarity
-                         console.warn(`Invalid rewardValue for BONUS_GOLD challenge ${challenge.challengeId}: ${challenge.rewardValue}`);
+                         console.warn(`[Claim Reward] Invalid rewardValue for BONUS_GOLD challenge ${challengeId}: ${challenge.rewardValue}`);
                          notificationMessage += `Could not apply gold bonus due to invalid value.`;
                          rewardGranted = true; // Still mark as claimed/acknowledged
                     }
                 } else {
-                     console.log(`BONUS_GOLD challenge ${challenge.challengeId} claimed, but rewardValue is zero or less.`);
+                     console.log(`[Claim Reward] BONUS_GOLD challenge ${challengeId} claimed, but rewardValue is zero or less.`);
                      notificationMessage += `Acknowledged completion of ${challenge.name}.`;
                      rewardGranted = true; // Mark as claimed even if value is 0
                 }
@@ -110,12 +147,10 @@ const claimChallengeReward = async (req, res) => {
                      const rewardAmount = Number(challenge.rewardValue);
                       if (!isNaN(rewardAmount)) {
                          user.cashBalanceLKR = (user.cashBalanceLKR || 0) + rewardAmount;
-                         // Add a transaction record for the bonus cash
                          user.transactions.push({
-                             _id: new mongoose.Types.ObjectId(),
+                             _id: new mongoose.Types.ObjectId(), // Generate new ID
                              type: 'bonus',
                              amountLKR: rewardAmount,
-                             // Use challenge.name from the DB object
                              description: `Challenge Reward: ${challenge.name} (+${formatCurrency(rewardAmount)})`,
                              status: 'completed',
                              timestamp: new Date()
@@ -124,106 +159,107 @@ const claimChallengeReward = async (req, res) => {
                          rewardGranted = true;
                          transactionAdded = true;
                      } else {
-                          console.warn(`Invalid rewardValue for BONUS_CASH challenge ${challenge.challengeId}: ${challenge.rewardValue}`);
+                          console.warn(`[Claim Reward] Invalid rewardValue for BONUS_CASH challenge ${challengeId}: ${challenge.rewardValue}`);
                           notificationMessage += `Could not apply cash bonus due to invalid value.`;
                           rewardGranted = true; // Still mark as claimed/acknowledged
                      }
                  } else {
-                      console.log(`BONUS_CASH challenge ${challenge.challengeId} claimed, but rewardValue is zero or less.`);
+                      console.log(`[Claim Reward] BONUS_CASH challenge ${challengeId} claimed, but rewardValue is zero or less.`);
                       notificationMessage += `Acknowledged completion of ${challenge.name}.`;
                       rewardGranted = true; // Mark as claimed even if value is 0
                  }
                  break;
 
              case 'FEE_DISCOUNT_NEXT_BUY':
-                  // Note: Applying this discount requires logic in the purchase/investment controller.
-                  // Here, we just mark that the user has earned it.
-                  if (challenge.rewardValue > 0 && challenge.rewardValue <= 1) { // Expect value between 0 and 1 (e.g., 0.1 for 10%)
+                  // Ensure rewardValue is a valid percentage (0 < value <= 1)
+                  if (challenge.rewardValue > 0 && challenge.rewardValue <= 1) {
                       const discountPercent = Number(challenge.rewardValue);
                       if (!isNaN(discountPercent)) {
-                          // Store discount info using challenge.challengeId as part of the key
-                          user.challengeProgress.set(`${challenge.challengeId}_discount_percent`, discountPercent);
-                          user.challengeProgress.set(`${challenge.challengeId}_discount_applied`, false); // Flag indicating if used
+                          // Set new flags (Map.set overwrites existing keys if they exist)
+                          user.challengeProgress.set(`${challengeId}_discount_percent`, discountPercent);
+                          user.challengeProgress.set(`${challengeId}_discount_applied`, false); // Explicitly set to false
                           notificationMessage += `You've earned a ${discountPercent * 100}% fee discount on your next gold purchase! It will be applied automatically.`;
                           rewardGranted = true;
-                          // No direct transaction here, it's a future potential modification
+                          // No direct transaction here, but progress map is modified
                       } else {
-                          console.warn(`Invalid rewardValue for FEE_DISCOUNT_NEXT_BUY challenge ${challenge.challengeId}: ${challenge.rewardValue}`);
+                          console.warn(`[Claim Reward] Invalid rewardValue for FEE_DISCOUNT_NEXT_BUY challenge ${challengeId}: ${challenge.rewardValue}`);
                           notificationMessage += `Could not grant discount due to invalid value.`;
                           rewardGranted = true; // Still mark as claimed/acknowledged
                       }
                   } else {
-                      console.log(`FEE_DISCOUNT_NEXT_BUY challenge ${challenge.challengeId} claimed, but rewardValue is invalid or zero.`);
+                      console.log(`[Claim Reward] FEE_DISCOUNT_NEXT_BUY challenge ${challengeId} claimed, but rewardValue is invalid (must be > 0 and <= 1) or zero.`);
                       notificationMessage += `Acknowledged completion of ${challenge.name}.`;
                       rewardGranted = true; // Mark as claimed
                   }
                   break;
 
              case 'BADGE_ELIGIBILITY':
-                  // This type doesn't grant a direct monetary/gold reward via *this* claim action.
-                  // It signifies meeting criteria. Another system (e.g., badge service) might check completion/claim status.
-                  // Use challenge.rewardText or challenge.name from the DB object
-                  notificationMessage += `You've met the criteria for the "${challenge.rewardText || challenge.name}". Check your badges!`;
-                  rewardGranted = true; // Claiming marks it as acknowledged by the user
+                  notificationMessage += `You've met the criteria for "${challenge.rewardText || challenge.name}". Check your badges!`;
+                  rewardGranted = true; // Claiming marks it as acknowledged
                   break;
 
             // Add more cases here for other reward types as needed
 
             default:
-                // Use challenge.challengeId and challenge.rewardType for logging
-                console.warn(`Unhandled rewardType "${challenge.rewardType}" for challenge ${challenge.challengeId}`);
-                // Use challenge.rewardText or challenge.name from the DB object
+                console.warn(`[Claim Reward] Unhandled rewardType "${challenge.rewardType}" for challenge ${challengeId}`);
                 notificationMessage += challenge.rewardText || `Successfully claimed reward for ${challenge.name}.`;
-                rewardGranted = true; // Allow claiming even if no specific action defined yet, marking acknowledgement
+                rewardGranted = true; // Allow claiming even if no specific action defined yet
         }
 
-        // Ensure we proceed only if a reward action was logically taken or acknowledged
-        if (!rewardGranted) {
-             // This case should ideally not be reached if the switch handles all possibilities including default.
-             console.error(`Claim processed for ${challenge.challengeId}, but rewardGranted flag remained false. Review logic.`);
-             return res.status(500).json({ message: "Internal error processing reward." });
-        }
+        // --- Mark as Claimed & Save (Only AFTER successful reward logic or if rewardGranted is true) ---
+         if (rewardGranted) {
+             // --- SET CLAIMED FLAG (Explicitly boolean true) ---
+             // Map type was already ensured/corrected before the claim check
+             user.challengeProgress.set(claimedKey, true); // <-- ENSURE THIS IS BOOLEAN true
 
-        // Mark challenge as claimed in progress map using challenge.challengeId
-        user.challengeProgress.set(`${challenge.challengeId}_claimed`, true);
-        user.markModified('challengeProgress'); // Essential for Map updates
+             // --- Mark Modified Paths ---
+             user.markModified('challengeProgress'); // ESSENTIAL for nested Map updates
+             if (transactionAdded) {
+                 user.markModified('transactions'); // Mark if transactions array changed
+             }
 
-        // Mark transactions as modified only if we potentially added one
-        if (transactionAdded) {
-            user.markModified('transactions');
-        }
+             // --- Save User ---
+             console.log(`[Claim Reward] Saving user ${userId} with ${claimedKey} set to boolean true.`);
+             await user.save();
+             console.log(`[Claim Reward] User ${userId} saved successfully.`);
 
-        // Save the updated user document
-        await user.save();
+             // --- Send notification AFTER successful save ---
+             try {
+                  await createNotification(userId.toString(), 'gamification_reward_claimed', {
+                      title: 'Reward Claimed!',
+                      message: notificationMessage, // Use the message built in the switch statement
+                      link: '/gamification', // Example link
+                      challengeId: challengeId,
+                      rewardType: challenge.rewardType,
+                      rewardValue: challenge.rewardValue // Include value if useful
+                  });
+                  console.log(`[Claim Reward] Notification sent successfully for user ${userId}, challenge ${challengeId}.`);
+             } catch (notificationError) {
+                  // Log the error but don't fail the entire request because of notification failure
+                  console.error(`[Claim Reward] Error creating notification for user ${userId}, challenge ${challengeId} (non-critical):`, notificationError);
+             }
 
-        // --- Send Specific Notification ---
-        try {
-             await createNotification(userId.toString(), 'gamification_reward_claimed', {
-                 title: 'Reward Claimed!',
-                 message: notificationMessage, // Use the message built in the switch statement
-                 link: '/gamification', // Example link to gamification page
-                 challengeId: challenge.challengeId, // Use the actual challengeId from the definition
-                 rewardType: challenge.rewardType // Include rewardType if useful
+             res.json({
+                  message: `Reward for "${challenge.name}" claimed successfully!`,
+                 // Optionally return updated state if needed by frontend
+                 // newGoldBalanceGrams: user.goldBalanceGrams,
+                 // newCashBalanceLKR: user.cashBalanceLKR,
              });
-        } catch (notificationError) {
-             console.error(`Failed to send notification for user ${userId} after claiming challenge ${challenge.challengeId}:`, notificationError);
-             // Proceed even if notification fails, the reward was granted. Log the error.
-        }
 
-
-        res.json({
-             message: `Reward for "${challenge.name}" claimed successfully!`,
-             // Optionally return updated balances/state if useful for the frontend
-             // newGoldBalanceGrams: user.goldBalanceGrams,
-             // newCashBalanceLKR: user.cashBalanceLKR,
-             // updatedProgress: Object.fromEntries(user.challengeProgress) // Convert Map for JSON if needed
-        });
+         } else {
+             // This case should ideally not be reached if the switch covers all possibilities or defaults handle it.
+             console.error(`[Claim Reward] Reward action failed or was not defined for challenge ${challengeId}, user ${userId} (rewardGranted=false).`);
+             // Don't save the claimed flag if reward granting failed unexpectedly
+             return res.status(500).json({ message: "Failed to process reward action. Please contact support if this persists." });
+         }
 
     } catch (error) {
-        // Use the challengeId from params for logging if the DB fetch failed early
-        const logChallengeId = challenge ? challenge.challengeId : challengeId;
-        console.error(`Claim Reward Error for user ${userId}, challenge ${logChallengeId}:`, error);
-        // Avoid sending detailed internal errors to the client
+        console.error(`[Claim Reward] General Error claiming reward for user ${userId}, challenge ${challengeId}:`, error);
+        // Check for specific Mongoose validation errors if needed
+        if (error.name === 'ValidationError') {
+             console.error("[Claim Reward] Mongoose Validation Error:", error.errors);
+             return res.status(400).json({ message: "Validation error saving user data.", details: error.message });
+        }
         res.status(500).json({ message: "Server error claiming reward. Please try again later." });
     }
 };
