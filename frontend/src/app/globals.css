@@ -43,9 +43,7 @@ a {
   }
 }
 
-
-/* SAABIth's css
-*/
+/* SAABIth's css */
 /* @import Google Fonts (already included in HTML) */
 
 /* --- Global Resets & Base Styles --- */
@@ -77,65 +75,6 @@ a {
 
 ul {
   list-style: none;
-}
-
-/* --- Navbar --- */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 5%;
-  background-color: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.navbar .logo img {
-  height: 50px;
-  width: auto;
-  display: block;
-}
-
-.nav-links {
-  display: flex;
-  align-items: center;
-}
-
-.nav-links li {
-  margin-left: 35px;
-}
-
-.nav-links a {
-  color: #333;
-  font-weight: 500;
-  font-size: 0.95rem;
-  transition: color 0.3s ease;
-}
-
-.nav-links a:hover {
-  color: #F8B612;
-}
-
-.nav-links a.active {
-  color: #F8B612;
-  font-weight: 600;
-}
-
-.nav-links .login-btn {
-  border:none;
-
-  background-color: #F8B612;
-  color: #fff;
-  padding: 8px 20px;
-  border-radius: 6px;
-  font-weight: 600;
-  transition: background-color 0.3s ease;
-}
-
-.nav-links .login-btn:hover {
-  background-color: #e0a810;
 }
 
 /* --- Generic CTA Button --- */
@@ -198,8 +137,8 @@ ul {
 
 .hero-image-slides {
   display: flex;
-  width: 100%; /* Initial width for one set */
-  animation: none; /* Animation will be handled by JavaScript */
+  width: 100%;
+  animation: none;
 }
 
 .hero-image-slider-container:hover .hero-image-slides {
@@ -207,7 +146,7 @@ ul {
 }
 
 .hero-image-slides img {
-  width: 25%; /* 100% / 4 images per set */
+  width: 25%;
   height: 300px;
   object-fit: cover;
   border-radius: 25px;
@@ -217,22 +156,22 @@ ul {
   flex-shrink: 0;
 }
 
-/* --- Features Section (Minimal Design with Adjusted Padding) --- */
+/* --- Features Section --- */
 .features {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 60px 5%; /* Adjusted padding for better spacing */
+  padding: 60px 5%;
   background-color: #FFFBEF;
   text-align: center;
   flex-wrap: wrap;
-  gap: 30px; /* Adjusted gap for better spacing */
+  gap: 30px;
 }
 
 .feature-item {
   flex: 1;
   min-width: 150px;
-  padding: 20px; /* Adjusted padding for better spacing */
+  padding: 20px;
 }
 
 .feature-item i {
@@ -247,9 +186,9 @@ ul {
   color: #333;
 }
 
-/* --- Why Choose GoldNest Section (Reverted to Inline Layout with Adjusted Padding) --- */
+/* --- Why Choose GoldNest Section --- */
 .why-choose {
-  padding: 60px 5%; /* Adjusted padding for better spacing */
+  padding: 60px 5%;
   background-color: #fff;
 }
 
@@ -262,20 +201,20 @@ ul {
 }
 
 .why-choose-grid {
-  display: flex; /* Changed to flex for inline layout */
-  justify-content: center; /* Center the items */
-  align-items: center; /* Vertically align items */
-  flex-wrap: nowrap; /* Prevent wrapping to keep items in a single line */
-  gap: 30px; /* Adjusted gap for better spacing */
-  overflow-x: auto; /* Allow horizontal scrolling on smaller screens */
-  padding: 0 5%; /* Add padding to prevent items from touching the edges */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 30px;
+  overflow-x: auto;
+  padding: 0 5%;
 }
 
 .why-choose-item {
   text-align: center;
-  padding: 20px; /* Adjusted padding for better spacing */
-  min-width: 200px; /* Ensure items have a minimum width */
-  flex-shrink: 0; /* Prevent items from shrinking */
+  padding: 20px;
+  min-width: 200px;
+  flex-shrink: 0;
 }
 
 .why-choose-item .icon-bg {
@@ -498,7 +437,7 @@ ul {
   display: block;
 }
 
-/* --- Auth Container (Sign-Up and Login) --- */
+/* --- Auth Container --- */
 .auth-container {
   max-width: 450px;
   margin: 2rem auto;
@@ -723,7 +662,7 @@ ul {
 @media (max-width: 992px) {
   .hero-content h1 { font-size: 2.2rem; }
   .hero-content p { font-size: 1rem; }
-  .why-choose-grid { flex-wrap: wrap; } /* Allow wrapping on smaller screens */
+  .why-choose-grid { flex-wrap: wrap; }
   .footer-content { justify-content: flex-start; }
   .footer-section { flex-basis: 45%; margin-bottom: 20px; }
   .footer-section.logo-section { flex-basis: 100%; text-align: center; }
@@ -732,17 +671,13 @@ ul {
 }
 
 @media (max-width: 768px) {
-  .navbar { padding: 10px 3%; flex-direction: column; align-items: center; }
-  .navbar .logo { margin-bottom: 10px; }
-  .nav-links { justify-content: center; flex-wrap: wrap; padding: 0; }
-  .nav-links li { margin: 5px 10px; }
   .hero-content h1 { font-size: 1.8rem; }
   .hero-content p { font-size: 0.95rem; }
   .hero-image-slides img { height: 120px; padding: 0 5px; }
   .hero-image-slider-container { margin-bottom: 30px; }
   .features { flex-direction: column; gap: 20px; }
   .why-choose h2, .faq h2 { font-size: 1.6rem; }
-  .why-choose-grid { flex-wrap: wrap; } /* Ensure wrapping on smaller screens */
+  .why-choose-grid { flex-wrap: wrap; }
   .faq-question { padding: 12px 45px 12px 50px; font-size: 0.95rem; }
   .faq-answer { padding: 15px 20px 15px 50px; font-size: 0.9rem; }
   .cta-section h2 { font-size: 1.6rem; }
@@ -757,7 +692,6 @@ ul {
       max-width: 90%;
   }
 }
-
 
 /* internal-styles.css */
 
@@ -868,27 +802,55 @@ body {
 /* --- Navbar Adjustments --- */
 .navbar {
   background-color: #fff;
-  padding: 8px 5%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 0px 5%;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: sticky;
   top: 0;
   z-index: 1000;
+  display: flex;
+  align-items: center;
+}
+
+.navbar .logo {
+  display: flex;
+  align-items: center;
 }
 
 .navbar .logo img {
-  height: 32px;
+  height: 40px;
+  width: auto;
+  margin-top: 5px;
 }
 
 .hamburger {
-  display: none;
   background: none;
   border: none;
   font-size: 1.5rem;
   color: #333;
   cursor: pointer;
+  display: none;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.action-buttons .notification-btn,
+.action-buttons .profile-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: #333;
+  cursor: pointer;
+  position: relative;
+}
+
+.action-buttons .notification-btn:focus,
+.action-buttons .profile-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(248, 182, 18, 0.3);
 }
 
 .nav-links {
@@ -897,7 +859,6 @@ body {
   gap: 12px;
   margin: 0;
   padding: 0;
-  position: relative;
   align-items: center;
 }
 
@@ -907,6 +868,7 @@ body {
 
 .nav-links li {
   position: relative;
+  margin-left: 35px; /* Adjusted for external navbar spacing */
 }
 
 .nav-links li a {
@@ -923,9 +885,26 @@ body {
 
 .nav-links li a.active {
   color: #F8B612;
+  font-weight: 600;
 }
 
-.nav-links .profile-btn, .nav-links .notification-btn {
+.nav-links .login-btn {
+  border: none;
+  background-color: #F8B612;
+  color: #fff;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+  cursor: pointer; /* Ensure button is clickable */
+}
+
+.nav-links .login-btn:hover {
+  background-color: #e0a810;
+}
+
+.nav-links .profile-btn,
+.nav-links .notification-btn {
   background: none;
   border: none;
   font-size: 1.2rem;
@@ -934,7 +913,8 @@ body {
   position: relative;
 }
 
-.nav-links .profile-btn:focus, .nav-links .notification-btn:focus {
+.nav-links .profile-btn:focus,
+.nav-links .notification-btn:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(248, 182, 18, 0.3);
 }
@@ -1024,7 +1004,7 @@ body {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   padding: 12px;
   z-index: 1000;
-  min-width: 200px;
+  min-width: 250px;
   text-align: center;
 }
 
@@ -1042,10 +1022,15 @@ body {
   font-weight: 600;
 }
 
+.profile-dropdown .btn {
+  height: 40px;
+  padding: 20px;
+  margin: 0 5px;
+}
+
 /* --- Wallet Page --- */
 .wallet {
   padding: 15px 5%;
-  
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -1060,7 +1045,7 @@ body {
   gap: 12px;
 }
 
-/* Wallet Balance and Gold Owned (Wallet) */
+/* Wallet Balance and Gold Owned */
 .wallet-balance {
   padding: 20px;
 }
@@ -1073,7 +1058,8 @@ body {
   margin-bottom: 12px;
 }
 
-.balance-left, .balance-right {
+.balance-left,
+.balance-right {
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -1111,14 +1097,16 @@ body {
   height: 32px;
 }
 
-.balance-left p, .balance-right p {
+.balance-left p,
+.balance-right p {
   font-size: 0.9rem;
   color: #666;
   margin: 0;
   line-height: 1.3;
 }
 
-.balance-left h2, .balance-right h2 {
+.balance-left h2,
+.balance-right h2 {
   font-size: 1.75rem;
   font-weight: 800;
   color: #333;
@@ -1167,14 +1155,16 @@ body {
   margin: 20px 0;
 }
 
-/* Transaction History (Wallet) */
-.transaction-history table, .redeem-history table {
+/* Transaction History */
+.transaction-history table,
+.redeem-history table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 12px;
 }
 
-.transaction-history th, .redeem-history th {
+.transaction-history th,
+.redeem-history th {
   font-size: 0.75rem;
   font-weight: 500;
   color: #666;
@@ -1184,7 +1174,8 @@ body {
   white-space: nowrap;
 }
 
-.transaction-history td, .redeem-history td {
+.transaction-history td,
+.redeem-history td {
   font-size: 0.8rem;
   color: #333;
   padding: 8px 12px;
@@ -1236,14 +1227,14 @@ body {
   border-color: #F8B612;
 }
 
-.transaction-history th:nth-child(1) { width: 20%; } /* Date */
-.transaction-history th:nth-child(2) { width: 15%; } /* Type */
-.transaction-history th:nth-child(3) { width: 15%; } /* Cash Amount */
-.transaction-history th:nth-child(4) { width: 15%; } /* Gold Amount */
-.transaction-history th:nth-child(5) { width: 10%; } /* Rate */
-.transaction-history th:nth-child(6) { width: 10%; } /* Discount/Fee */
-.transaction-history th:nth-child(7) { width: 10%; } /* Total */
-.transaction-history th:nth-child(8) { width: 10%; } /* Status */
+.transaction-history th:nth-child(1) { width: 20%; }
+.transaction-history th:nth-child(2) { width: 15%; }
+.transaction-history th:nth-child(3) { width: 15%; }
+.transaction-history th:nth-child(4) { width: 15%; }
+.transaction-history th:nth-child(5) { width: 10%; }
+.transaction-history th:nth-child(6) { width: 10%; }
+.transaction-history th:nth-child(7) { width: 10%; }
+.transaction-history th:nth-child(8) { width: 10%; }
 
 .transaction-history th:not(:last-child),
 .transaction-history td:not(:last-child) {
@@ -1347,14 +1338,14 @@ body {
   border-color: #F8B612;
 }
 
-.redeem-history th:nth-child(1) { width: 20%; } /* Date */
-.redeem-history th:nth-child(2) { width: 15%; } /* Item */
-.redeem-history th:nth-child(3) { width: 10%; } /* Quantity */
-.redeem-history th:nth-child(4) { width: 10%; } /* Total Gold */
-.redeem-history th:nth-child(5) { width: 10%; } /* Fees */
-.redeem-history th:nth-child(6) { width: 10%; } /* Status */
-.redeem-history th:nth-child(7) { width: 15%; } /* Tracking Number */
-.redeem-history th:nth-child(8) { width: 10%; } /* Details */
+.redeem-history th:nth-child(1) { width: 20%; }
+.redeem-history th:nth-child(2) { width: 15%; }
+.redeem-history th:nth-child(3) { width: 10%; }
+.redeem-history th:nth-child(4) { width: 10%; }
+.redeem-history th:nth-child(5) { width: 10%; }
+.redeem-history th:nth-child(6) { width: 15%; }
+.redeem-history th:nth-child(7) { width: 10%; }
+.redeem-history th:nth-child(8) { width: 10%; }
 
 .redeem-history th:not(:last-child),
 .redeem-history td:not(:last-child) {
@@ -1418,7 +1409,7 @@ body {
   text-decoration: underline;
 }
 
-/* Redeem Gold Coin (Wallet) */
+/* Redeem Gold Coin */
 .redeem-coin-section {
   display: flex;
   flex-direction: column;
@@ -1591,7 +1582,7 @@ body {
   margin-top: 12px;
 }
 
-/* Gamifications & Rewards (Wallet) */
+/* Gamifications & Rewards */
 .gamification-rewards {
   display: flex;
   flex-direction: column;
@@ -1822,7 +1813,6 @@ body {
 
 .logo-section img {
   height: 40px;
-  margin-bottom: 12px;
 }
 
 .payment-icons {
@@ -2001,7 +1991,8 @@ body {
 }
 
 /* Deposit and Withdraw Sections */
-.deposit-section, .withdraw-section {
+.deposit-section,
+.withdraw-section {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -2009,19 +2000,22 @@ body {
   margin: 0 auto;
 }
 
-.deposit-section form, .withdraw-section form {
+.deposit-section form,
+.withdraw-section form {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.deposit-summary, .withdraw-summary {
+.deposit-summary,
+.withdraw-summary {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.deposit-summary p, .withdraw-summary p {
+.deposit-summary p,
+.withdraw-summary p {
   font-size: 0.9rem;
   color: #333;
   margin: 0;
@@ -2048,18 +2042,6 @@ body {
   margin: 0;
 }
 
-.btn-danger {
-  background-color: #F8B612;
-  color: #FFF;
-  padding: 10px 20px;
-  border-radius: 20px;
-  font-weight: 500;
-  font-size: 0.8rem;
-  border: 1px solid #F8B612;
-  cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
-
 /* Redeem Confirmation Section */
 .redeem-confirmation {
   display: flex;
@@ -2075,7 +2057,8 @@ body {
   gap: 16px;
 }
 
-.redeem-summary h4, .delivery-details h4 {
+.redeem-summary h4,
+.delivery-details h4 {
   font-size: 0.9rem;
   font-weight: 600;
   color: #333;
@@ -2117,20 +2100,31 @@ body {
 }
 
 @media (max-width: 768px) {
-  .redeem-actions, .reward-action, .referral-actions, .form-actions {
+  .redeem-actions,
+  .reward-action,
+  .referral-actions,
+  .form-actions {
       flex-direction: column;
       gap: 8px;
   }
 
-  .redeem-details, .deposit-section, .withdraw-section {
+  .redeem-details,
+  .deposit-section,
+  .withdraw-section {
       padding: 0;
   }
 
-  .detail-item p, .reward-details p, .referral-info p, .deposit-summary p, .withdraw-summary p, .profile-section p {
+  .detail-item p,
+  .reward-details p,
+  .referral-info p,
+  .deposit-summary p,
+  .withdraw-summary p,
+  .profile-section p {
       font-size: 0.8rem;
   }
 
-  .reward-details h4, .referral-info h4 {
+  .reward-details h4,
+  .referral-info h4 {
       font-size: 1.1rem;
   }
 
@@ -2150,27 +2144,32 @@ body {
       gap: 16px;
   }
 
-  .transaction-history table, .redeem-history table {
+  .transaction-history table,
+  .redeem-history table {
       display: block;
       overflow-x: auto;
       white-space: nowrap;
   }
 
-  .transaction-history thead, .redeem-history thead {
+  .transaction-history thead,
+  .redeem-history thead {
       display: none;
   }
 
-  .transaction-history tbody, .redeem-history tbody {
+  .transaction-history tbody,
+  .redeem-history tbody {
       display: block;
   }
 
-  .transaction-history tr, .redeem-history tr {
+  .transaction-history tr,
+  .redeem-history tr {
       display: block;
       margin-bottom: 12px;
       border-bottom: 1px solid #eee;
   }
 
-  .transaction-history td, .redeem-history td {
+  .transaction-history td,
+  .redeem-history td {
       display: block;
       text-align: right;
       padding: 4px 12px;
@@ -2178,7 +2177,8 @@ body {
       position: relative;
   }
 
-  .transaction-history td::before, .redeem-history td::before {
+  .transaction-history td::before,
+  .redeem-history td::before {
       content: attr(data-label);
       position: absolute;
       left: 12px;
@@ -2186,75 +2186,123 @@ body {
       color: #666;
   }
 
-  .transaction-history td:not(:last-child), .redeem-history td:not(:last-child) {
+  .transaction-history td:not(:last-child),
+  .redeem-history td:not(:last-child) {
       border-right: none;
   }
 
-  .nav-links {
-      display: none;
-      flex-direction: column; /* Ensure vertical layout for nav links in mobile */
-      align-items: stretch; /* Make nav links full width */
-      justify-content: flex-start; /* Align items to the start */
-      position: absolute;
-      top: 56px;
-      left: 0;
-      right: 0;
-      background-color: #fff;
-      flex-direction: column;
-      padding: 12px;
-  }
-
-  .nav-links.nav-active {
-      display: flex;
-  }
-
-  .nav-links.nav-active .notification-btn,
-  .nav-links.nav-active .profile-btn {
-      display: inline-flex; /* Keep them inline-flex */
-      width: auto;        /* Reset width to auto */
-      text-align: center; /* Center text if needed */
-      padding: 0;         /* Reset padding if needed */
-      margin-left: 12px; /* Add some space to the left */
-  }
-
-  .nav-links li {
-      width: 100%;
-  }
-
-  .nav-links li a, .nav-links .profile-btn, .nav-links .notification-btn {
-      display: block;
-      padding: 12px;
-      text-align: left;
-      width: 100%;
-  }
-
-  .notification-dropdown, .profile-dropdown {
-      position: static;
-      width: 100%;
-      box-shadow: none;
-      border: 1px solid #eee;
+  /* Updated Navbar Mobile Styles */
+  .navbar {
+    padding: 10px 3%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
   }
 
   .hamburger {
-      display: block;
-      order: 2; /* Place hamburger on the right */
+    display: block;
+    order: 1;
+    flex-shrink: 0;
+    margin-left: 10px;
   }
 
-  .navbar .logo {
-      order: 1; /* Place logo on the left */
+  .logo {
+    position: absolute;
+    left: 25%;
+    transform: translateX(-50%);
+    flex-shrink: 0;
+    order: 2;
+    padding-top: 5px;
+  }
+
+  .action-buttons {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    order: 3;
+    flex-shrink: 0;
+    margin-right: 10px;
+  }
+
+  .action-buttons .notification-btn,
+  .action-buttons .profile-btn {
+    font-size: 1.2rem;
+  }
+
+  .notification-count {
+    width: 16px;
+    height: 16px;
+    font-size: 0.7rem;
+  }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    background-color: #fff;
+    flex-direction: column;
+    padding: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    z-index: 999;
+  }
+
+  .nav-links.nav-active {
+    display: flex;
+  }
+
+  .nav-links li {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .nav-links li a,
+  .nav-links li .login-btn {
+    display: block;
+    padding: 12px;
+    text-align: left;
+    width: 100%;
+    font-size: 1rem;
+  }
+
+  .nav-links .login-btn {
+    background-color: #F8B612;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .notification-dropdown,
+  .profile-dropdown {
+    position: absolute;
+    top: 56px;
+    right: 0;
+    width: 100%;
+    max-width: 300px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #eee;
   }
 }
 
 @media (max-width: 480px) {
-  .redeem-details, .deposit-section, .withdraw-section, .redeem-confirmation {
+  .redeem-details,
+  .deposit-section,
+  .withdraw-section,
+  .redeem-confirmation {
       max-width: 100%;
   }
 
-  .reward-icon, .referral-icon {
+  .reward-icon,
+  .referral-icon {
       font-size: 1.5rem;
   }
 
-  .redeem-summary p, .delivery-details label, .delivery-details input {
+  .redeem-summary p,
+  .delivery-details label,
+  .delivery-details input {
       font-size: 0.8rem;
   }
 
@@ -2279,106 +2327,178 @@ body {
       text-align: center;
   }
 
-  .social-icons, .payment-icons {
+  .social-icons,
+  .payment-icons {
       justify-content: center;
+  }
+
+  /* Further refine navbar for small screens */
+  .action-buttons {
+    gap: 20px;
+  }
+
+  .action-buttons .notification-btn,
+  .action-buttons .profile-btn {
+    font-size: 1.5rem;
+  }
+
+  .notification-count {
+    width: 14px;
+    height: 14px;
+    font-size: 0.6rem;
+  }
+
+  .notification-dropdown,
+  .profile-dropdown {
+    max-width: 250px;
+  }
+
+  .logo {
+    margin-left: 4%;
+  }
+
+  .logo img {
+    width: 100px;
+    height: auto;
   }
 }
 
+/* Desktop: Ensure original nav-links behavior */
+@media (min-width: 769px) {
+  .navbar {
+    justify-content: space-between;
+  }
 
+  .hamburger {
+    display: none;
+  }
 
-/*SKELETONS CSS*/
+  .logo {
+    position: static;
+    transform: none;
+  }
 
-/* --- Skeleton Loader Styles --- */
+  .action-buttons {
+    order: 3;
+    gap: 45px;
+    margin-left: 45px;
+  }
+
+  .nav-links {
+    display: flex;
+    position: static;
+    box-shadow: none;
+    margin-left: auto;
+  }
+
+  .nav-links li {
+    margin-left: 35px; /* Restore original spacing for desktop */
+  }
+}
+
+/* SKELETONS CSS */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
 
 .skeleton {
-  background-color: #e2e8f0; /* Light gray */
-  border-radius: 0.25rem; /* Adjust as needed */
+  background-color: #e2e8f0;
+  border-radius: 0.25rem;
   animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  color: transparent; /* Hide any accidental text */
+  color: transparent;
   cursor: progress;
-  user-select: none; /* Prevent text selection */
-  display: inline-block; /* Ensure it takes up space */
+  user-select: none;
+  display: inline-block;
 }
 
 .skeleton-text {
-  height: 1em; /* Match typical text height */
-  width: 80%; /* Default width */
-  margin-bottom: 0.25em; /* Spacing below text lines */
+  height: 1em;
+  width: 80%;
+  margin-bottom: 0.25em;
 }
+
 .skeleton-text-short { width: 40%; }
 .skeleton-text-medium { width: 60%; }
 .skeleton-text-long { width: 100%; }
 
 .skeleton-title {
-  height: 1.5em; /* Taller for titles */
+  height: 1.5em;
   width: 50%;
   margin-bottom: 0.75em;
 }
 
 .skeleton-button {
-  height: 38px; /* Match btn height */
-  width: 100px; /* Match btn width */
-  border-radius: 20px; /* Match btn border-radius */
+  height: 38px;
+  width: 100px;
+  border-radius: 20px;
 }
 
 .skeleton-circle {
-    height: 80px; /* Match progress circle */
-    width: 80px;
-    border-radius: 50%;
+  height: 80px;
+  width: 80px;
+  border-radius: 50%;
 }
 
 .skeleton-icon-circle {
-    height: 40px; /* Match icon circle */
-    width: 40px;
-    border-radius: 50%;
+  height: 40px;
+  width: 40px;
+  border-radius: 50%;
 }
 
 .skeleton-table-row td {
-    /* Override cell padding for skeleton effect */
-    padding-top: 0.75rem !important;
-    padding-bottom: 0.75rem !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
 }
 
 .skeleton-table-cell {
-    height: 1em;
-    width: 90%; /* Adjust cell skeleton width */
+  height: 1em;
+  width: 90%;
 }
 
-/* Ensure skeleton elements within flex/grid align */
 .skeleton-wrapper {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
-
-/*withdraw and deposit additional*/
-
-/* Add to globals.css or your relevant CSS file */
+/* Withdraw and Deposit Additional */
 .input-field {
   padding: 0.5rem 0.75rem;
   border: 1px solid #ddd;
-  border-radius: 0.375rem; /* 6px */
+  border-radius: 4px;
   font-size: 0.9rem;
-  color: #333;
-  background-color: #fff;
+  width: 100%;
   transition: border-color 0.3s ease;
-  width: 100%; /* Ensure inputs take full width */
 }
 
 .input-field:focus {
   outline: none;
   border-color: #F8B612;
-  box-shadow: 0 0 0 1px #F8B612; /* Optional focus ring */
 }
 
+/* Additional Form Elements */
 .form-group {
-  margin-bottom: 1rem; /* Default spacing */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
+.form-group label {
+  font-size: 0.9rem;
+  color: #333;
+}
 
+.form-group select {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #333;
+  background-color: #fff;
+  transition: border-color 0.3s ease;
+}
 
-
+.form-group select:focus {
+  outline: none;
+  border-color: #F8B612;
+}
