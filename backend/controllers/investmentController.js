@@ -3,10 +3,11 @@ const mongoose = require('mongoose'); // Needed for ObjectId generation and DB i
 const User = require('../models/User');
 const { getGoldMarketSummary } = require('../utils/goldDataUtils');
 const { updateGamificationOnAction } = require('../services/gamificationTriggerService');
+// Corrected potential import path issue - adjust if your structure differs
 const { createNotification } = require('../services/notificationService');
 const { calculateBuyFee } = require('../utils/feeUtils'); // Import the base fee calculation function
 
-// Helper function for formatting currency (kept from old code as it's used in notification)
+// Helper function for formatting currency
 const formatCurrency = (value) => {
     // Basic fallback if Intl is not fully supported or for zero values
     if (typeof value !== 'number' || isNaN(value)) {
@@ -21,21 +22,45 @@ const formatCurrency = (value) => {
 const makeInvestment = async (req, res) => {
     // --- V V V START OF INVESTMENT PROCESS V V V ---
     try {
-        const { amountLKR, saveAsAuto, frequency } = req.body; // Get amount, auto-save flag, and frequency
+        // --- Destructure all potential fields ---
+        const { amountLKR, saveAsAuto, frequency, dayOfMonth } = req.body; // Get amount, auto-save flag, frequency, and potentially dayOfMonth
         const userId = req.user._id; // Get user ID from protect middleware
 
-        // --- Basic Validation ---
+        // --- V V V ADDED LOGGING V V V ---
+        console.log(`[InvestCtrl] Received request body:`, req.body);
+        // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
+
+        // --- Basic Investment Validation ---
         const investmentAmount = Number(amountLKR); // Ensure it's a number
         if (isNaN(investmentAmount) || investmentAmount < 100) { // Min investment check
             return res.status(400).json({ message: 'Invalid investment amount. Minimum is LKR 100.' });
         }
-        // Validate frequency if saveAsAuto is true
+
+        // --- V V V Auto-Invest Input Validation (if saveAsAuto is true) V V V ---
+        // --- V V V ADDED LOGGING V V V ---
+        console.log(`[InvestCtrl] Checking saveAsAuto: Value=${saveAsAuto}, Type=${typeof saveAsAuto}`); // Log value and type
+        // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
         if (saveAsAuto === true) { // Explicitly check boolean true
+            // --- V V V ADDED LOGGING V V V ---
+            console.log(`[InvestCtrl] saveAsAuto is true. Validating frequency/dayOfMonth...`); // Check if inside this block
+            // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
             if (!frequency || !['daily', 'weekly', 'monthly'].includes(frequency)) {
                 return res.status(400).json({ message: 'Invalid frequency selected for automatic payment.' });
             }
-            // Note: Consider adding dayOfMonth validation for 'monthly' if needed later.
+            // NEW: Validate dayOfMonth if frequency is 'monthly'
+            if (frequency === 'monthly') {
+                 const day = parseInt(dayOfMonth, 10);
+                 if (isNaN(day) || day < 1 || day > 28) { // Validate day is between 1 and 28
+                    return res.status(400).json({ message: 'Invalid day of month (1-28) provided for monthly auto-investment.' });
+                 }
+            }
+        } else {
+             // --- V V V ADDED LOGGING V V V ---
+             console.log(`[InvestCtrl] saveAsAuto is NOT true or not present.`); // Check if this logs instead
+             // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
         }
+        // --- ^ ^ ^ END Auto-Invest Validation ^ ^ ^ ---
+
 
         // --- Get current user data (including challengeProgress for discount) and market price ---
         const user = await User.findById(userId); // Fetch the user WITH challengeProgress
@@ -54,6 +79,7 @@ const makeInvestment = async (req, res) => {
         let feeLKR = calculateBuyFee(investmentAmount); // Calculate initial fee
         let appliedDiscountPercent = 0; // Track if a discount was applied
         let appliedDiscountChallengeId = null; // Track which challenge provided the discount
+        let discountApplied = false; // Flag to easily check if discount logic was successful
 
         // --- V V V APPLY FEE DISCOUNT LOGIC V V V ---
         let bestDiscount = 0;
@@ -67,12 +93,11 @@ const makeInvestment = async (req, res) => {
                 if (key.endsWith('_discount_applied') && value === false) {
                      const challengeId = key.replace('_discount_applied', '');
                      const discountPercentKey = `${challengeId}_discount_percent`;
-                     const discountPercentValue = user.challengeProgress.get(discountPercentKey); // Use a different var name
+                     const discountPercentValue = user.challengeProgress.get(discountPercentKey);
 
                      // If a discount % exists for this challenge and it's better than current best
-                     // Ensure discountPercentValue is treated as a percentage (e.g., 0.1 for 10%)
                      if (typeof discountPercentValue === 'number' && discountPercentValue > bestDiscount) {
-                         bestDiscount = discountPercentValue; // Store the percentage value (e.g., 0.1)
+                         bestDiscount = discountPercentValue; // Store the percentage value (e.g., 0.1 for 10%)
                          discountChallengeIdToApply = challengeId;
                      }
                 }
@@ -87,12 +112,13 @@ const makeInvestment = async (req, res) => {
              const discountAmount = feeLKR * appliedDiscountPercent; // Calculate the discount value
              feeLKR -= discountAmount; // Reduce the fee
              feeLKR = Math.max(0, feeLKR); // Ensure fee doesn't go below zero
+             discountApplied = true; // Set flag
 
              console.log(`Applied ${appliedDiscountPercent * 100}% discount from challenge ${appliedDiscountChallengeId}. Original fee: ${formatCurrency(originalFee)}, New fee: ${formatCurrency(feeLKR)}`);
 
              // --- Mark the discount as applied in user's progress map ---
              user.challengeProgress.set(`${appliedDiscountChallengeId}_discount_applied`, true);
-             user.markModified('challengeProgress'); // IMPORTANT: Mark map as modified for Mongoose save
+             // Note: MarkModified('challengeProgress') will be called before save
         }
         // --- ^ ^ ^ END APPLY FEE DISCOUNT LOGIC ^ ^ ^ ---
 
@@ -136,32 +162,85 @@ const makeInvestment = async (req, res) => {
         };
         user.transactions.push(transaction);
 
-        // --- Handle Automatic Payment Setup (if requested) ---
+        // --- V V V Add Auto-Invest Plan if requested V V V ---
         let autoInvestMessage = ''; // Message for response
+        let autoPaymentAdded = false; // Flag to know if we need to markModified
+        // Use the same strict check here
         if (saveAsAuto === true) {
-            const newAutoPayment = {
-                _id: new mongoose.Types.ObjectId(), // Give it a unique ID
-                frequency: frequency,
-                amountLKR: investmentAmount, // Amount to be invested each time
-                createdAt: new Date(),
-                isActive: true, // Assume active by default
-                // Note: 'dayOfMonth' handling is omitted as per 'new changes' structure
-            };
-            // Ensure automaticPayments array exists
-            if (!Array.isArray(user.automaticPayments)) {
-                 user.automaticPayments = [];
+            // --- V V V ADDED LOGGING V V V ---
+            console.log(`[InvestCtrl] Inside 'Add Auto-Invest Plan' block.`); // Check if execution reaches here
+            // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
+
+            // NEW: Optional: Check maximum number of plans
+            const MAX_AUTOPAYMENTS = Number(process.env.MAX_AUTOPAYMENTS_PER_USER) || 5; // Example limit from env or default 5
+            if (user.automaticPayments && user.automaticPayments.length >= MAX_AUTOPAYMENTS) {
+                console.warn(`User ${userId} reached max auto-payments (${MAX_AUTOPAYMENTS}). Investment made, but auto-plan not saved.`);
+                autoInvestMessage = ` Automatic payment not saved: Maximum plans reached.`;
+                // Investment still proceeds, but auto-plan is not added.
+            } else {
+                // Create the new auto-payment object
+                const newAutoPayment = {
+                    _id: new mongoose.Types.ObjectId(), // Give it a unique ID
+                    frequency: frequency,
+                    amountLKR: investmentAmount, // Amount to be invested each time
+                    createdAt: new Date(),
+                    isActive: true, // Assume active by default
+                };
+                // NEW: Add dayOfMonth only if frequency is monthly
+                if (frequency === 'monthly') {
+                    newAutoPayment.dayOfMonth = Number(dayOfMonth); // Ensure it's stored as a number
+                }
+
+                // Ensure automaticPayments array exists
+                if (!Array.isArray(user.automaticPayments)) {
+                    user.automaticPayments = [];
+                }
+                // Add the new plan
+                user.automaticPayments.push(newAutoPayment);
+                autoPaymentAdded = true; // Set flag: we added a plan
+
+                // --- V V V ADDED LOGGING V V V ---
+                console.log(`[InvestCtrl] Pushed new auto payment object:`, newAutoPayment); // Log the object being pushed
+                // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
+
+                // Original console log (can be kept or removed if the above is sufficient)
+                console.log(`[InvestCtrl] Added auto-payment for user ${userId}: ${frequency}, ${formatCurrency(investmentAmount)} LKR${frequency === 'monthly' ? ` on day ${dayOfMonth}` : ''}`);
+                autoInvestMessage = ` Automatic ${frequency} investment for ${formatCurrency(investmentAmount)} was set up.`;
             }
-            // Adding the payment directly
-            user.automaticPayments.push(newAutoPayment);
-            user.markModified('automaticPayments'); // Important for Mongoose to detect array push
-            console.log(`[InvestCtrl] Added auto-payment for user ${userId}: ${frequency}, ${formatCurrency(investmentAmount)} LKR`);
-            autoInvestMessage = ` Automatic investment for ${formatCurrency(investmentAmount)} ${frequency} was set up.`;
+        } else {
+            // --- V V V ADDED LOGGING V V V ---
+            console.log(`[InvestCtrl] Skipping 'Add Auto-Invest Plan' block because saveAsAuto was not true.`); // Log if skipped
+            // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
+        }
+        // --- ^ ^ ^ END Add Auto-Invest Plan ^ ^ ^ ---
+
+        // --- Mark Modified Paths for Mongoose ---
+        user.markModified('transactions'); // Always mark transactions as modified
+        if (autoPaymentAdded) {
+            // --- V V V ADDED LOGGING V V V ---
+            console.log("[InvestCtrl] Marking 'automaticPayments' as modified.");
+            // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
+            user.markModified('automaticPayments'); // Mark automaticPayments only if one was actually added
+        } else {
+            // --- V V V ADDED LOGGING V V V ---
+             console.log("[InvestCtrl] Not marking 'automaticPayments' as modified.");
+            // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
+        }
+        if (discountApplied) {
+            user.markModified('challengeProgress'); // Mark challengeProgress if a discount was used
         }
 
-        // --- Save User (saves balance, transaction, auto-payment, AND applied discount flag in challengeProgress) ---
+        // --- Save User (saves balance, transaction, potentially auto-payment, AND potentially applied discount flag) ---
+        // --- V V V ADDED LOGGING V V V ---
+        console.log("[InvestCtrl] Attempting user.save()...");
+        // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
         const updatedUser = await user.save(); // Save all changes
+        // --- V V V ADDED LOGGING V V V ---
+        console.log("[InvestCtrl] user.save() completed.");
+        // --- ^ ^ ^ END ADDED LOGGING ^ ^ ^ ---
 
         // --- Find the Saved Transaction (using ID for reliability) ---
+        // Use the ID from the transaction object we created earlier
         const savedTransaction = updatedUser.transactions.find(t => t._id.equals(transaction._id));
 
         // --- Trigger Post-Action Services (Gamification, Notifications) ---
@@ -179,21 +258,27 @@ const makeInvestment = async (req, res) => {
                  // Log error but don't fail the whole transaction
              }
              try {
-                 // Modify notification message if discount was applied
+                 // Modify notification message based on discount and auto-invest status
                  let notifyMsg = `You invested ${formatCurrency(savedTransaction.amountLKR)} (+ ${formatCurrency(savedTransaction.feeLKR)} fee) and received ${savedTransaction.amountGrams.toFixed(4)}g of gold. Total ${formatCurrency(totalCostLKR)} deducted.`;
                  if (appliedDiscountPercent > 0) {
                       notifyMsg += ` A ${appliedDiscountPercent * 100}% fee discount was applied!`;
                  }
+                 // Append auto-invest message (if any)
+                 if (autoInvestMessage) {
+                     notifyMsg += autoInvestMessage; // Add the result of the auto-invest setup attempt
+                 }
+
                  await createNotification(userId, 'transaction_buy', {
                      title: 'Investment Successful',
-                     message: notifyMsg, // Use the potentially updated message
+                     message: notifyMsg, // Use the combined message
                      link: '/wallet', // Link to wallet history page
                      metadata: {
                          transactionId: savedTransaction._id.toString(), // Ensure ID is string
                          amountLKR: savedTransaction.amountLKR,
                          amountGrams: savedTransaction.amountGrams,
                          feeLKR: savedTransaction.feeLKR,
-                         discountAppliedPercent: appliedDiscountPercent // Store discount info if needed
+                         discountAppliedPercent: appliedDiscountPercent, // Store discount info if needed
+                         autoInvestStatus: autoInvestMessage // Include auto-invest status message if needed
                      }
                  });
              } catch (notificationError) {
@@ -205,15 +290,15 @@ const makeInvestment = async (req, res) => {
 
 
         // --- Send Success Response ---
-        // Construct the main success message, including discount info if applicable
+        // Construct the main success message, including discount info and auto-invest setup info
         let successMessage = `Investment successful! ${formatCurrency(totalCostLKR)} deducted (incl. ${formatCurrency(feeLKR)} fee`;
         if (appliedDiscountPercent > 0) {
             successMessage += ` after ${appliedDiscountPercent * 100}% discount`;
         }
-        successMessage += `).${autoInvestMessage}`;
+        successMessage += `).${autoInvestMessage}`; // Append the auto-invest message
 
         res.status(200).json({
-            message: successMessage.trim(),
+            message: successMessage.trim(), // Trim any potential leading/trailing whitespace
             newCashBalanceLKR: updatedUser.cashBalanceLKR,
             newGoldBalanceGrams: updatedUser.goldBalanceGrams,
             transaction: savedTransaction || null, // Return the newly added transaction (or null if not found)
@@ -224,10 +309,11 @@ const makeInvestment = async (req, res) => {
                 cashBalanceLKR: updatedUser.cashBalanceLKR,
                 goldBalanceGrams: updatedUser.goldBalanceGrams,
                 transactions: updatedUser.transactions, // Send updated transactions array
-                automaticPayments: updatedUser.automaticPayments, // Send updated autopayments
+                automaticPayments: updatedUser.automaticPayments, // Send updated auto-payments array
                 // Include gamification fields, especially the updated challengeProgress
                 earnedBadgeIds: updatedUser.earnedBadgeIds,
-                challengeProgress: updatedUser.challengeProgress instanceof Map ? Object.fromEntries(updatedUser.challengeProgress) : updatedUser.challengeProgress || {}, // Send updated map
+                // Convert Map to object for JSON serialization if it exists
+                challengeProgress: updatedUser.challengeProgress instanceof Map ? Object.fromEntries(updatedUser.challengeProgress) : updatedUser.challengeProgress || {},
                 completedChallengeIds: updatedUser.completedChallengeIds,
                 starCount: updatedUser.starCount
             }
@@ -235,16 +321,17 @@ const makeInvestment = async (req, res) => {
 
     // --- V V V CATCH BLOCK FOR ERROR HANDLING V V V ---
     } catch (error) {
-        console.error('Investment processing error:', error); // Log the full error
+        console.error('[InvestCtrl] Investment processing error:', error); // Log the full error
         // Check for specific Mongoose validation errors if needed
         if (error.name === 'ValidationError') {
              return res.status(400).json({ message: 'Validation failed', errors: error.errors });
         }
-        // Check if it's our specific insufficient funds error
-        if (error.message.startsWith('Insufficient funds')) {
-            // The message is already constructed with details, so just send it
-            return res.status(400).json({ message: error.message });
-        }
+        // Check if it's our specific insufficient funds error (constructed earlier)
+        // Note: This check might not work as expected if the error wasn't thrown this way,
+        // but the specific check `user.cashBalanceLKR < totalCostLKR` handles it before this catch block.
+        // if (error.message.startsWith('Insufficient funds')) {
+        //    return res.status(400).json({ message: error.message });
+        //}
         // Generic server error
         res.status(500).json({ message: 'Server error during investment processing. Please try again.' });
     }

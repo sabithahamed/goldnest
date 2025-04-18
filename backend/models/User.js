@@ -43,16 +43,26 @@ const transactionSchema = new mongoose.Schema({
 
 // --- Auto Payment Sub-Schema ---
 const autoPaymentSchema = new mongoose.Schema({
-    _id: { type: mongoose.Schema.Types.ObjectId, required: true, auto: true },
+    // _id is implicitly added by Mongoose unless you define it explicitly.
+    // Let Mongoose handle the default _id generation for subdocuments in the array.
     frequency: {
         type: String,
-        enum: ['daily', 'weekly', 'monthly'], // Updated: Removed 'yearly'
+        enum: ['daily', 'weekly', 'monthly'],
         required: true
     },
-    amountLKR: { type: Number, required: true, min: 100 },
-    dayOfMonth: { type: Number, min: 1, max: 28 }, // Optional: For monthly frequency (Max 28 to avoid issues with shorter months)
-    // Add nextRunDate, isActive etc. for a full implementation
+    amountLKR: { type: Number, required: true, min: 100 }, // Define minimum here
+    dayOfMonth: { type: Number, min: 1, max: 28 }, // For monthly frequency (Max 28 to avoid issues)
+    // --- V V V FIELD ADDED AS REQUESTED V V V ---
+    isActive: {
+        type: Boolean,
+        default: true // Default new plans to active when created
+    }
+    // --- ^ ^ ^ END ADDED FIELD ^ ^ ^ ---
+    // Optional: Add createdAt, updatedAt if needed for tracking subdoc changes
+    // createdAt: { type: Date, default: Date.now },
+    // updatedAt: { type: Date } // Needs manual update logic if used
 });
+
 
 // --- Default Shipping Address Sub-Schema ---
 // Optional: Define a reusable schema for addresses
@@ -69,7 +79,7 @@ const shippingAddressSchema = new mongoose.Schema({
 
 // +++ NEW: Price Alert Sub-Schema +++
 const priceAlertSchema = new mongoose.Schema({
-   _id: { type: mongoose.Schema.Types.ObjectId, required: true, auto: true },
+   // Mongoose adds _id implicitly here as well
    targetPriceLKRPerGram: { type: Number, required: true },
    condition: { type: String, enum: ['below', 'above'], required: true },
    isActive: { type: Boolean, default: true },
@@ -87,19 +97,19 @@ const userSchema = new mongoose.Schema({
   nic: { type: String },
   address: { type: String }, // Keep primary address if needed, separate from shipping
   city: { type: String },    // Keep primary city if needed
-  profilePictureUrl: { // <-- ADDED THIS FIELD
+  profilePictureUrl: {
       type: String,
       default: null // Or an empty string '' if you prefer
   },
   goldBalanceGrams: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative gold
   cashBalanceLKR: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative cash
 
-  transactions: [transactionSchema], // Array of transactions, including redemptions (using the updated schema)
+  transactions: [transactionSchema], // Array of transactions
 
   defaultShippingAddress: shippingAddressSchema, // Store user's preferred default shipping address
 
   automaticPayments: {
-    type: [autoPaymentSchema], // Reference the updated autoPaymentSchema
+    type: [autoPaymentSchema], // Array using the updated autoPaymentSchema
     default: []
   },
 
@@ -114,12 +124,7 @@ const userSchema = new mongoose.Schema({
     default: {}
   },
   starCount: { type: Number, default: 0 }, // New field for stars
-  // Store IDs of challenges completed (potentially with completion date for resets)
-  // Simple approach: Just store the ID once completed
   completedChallengeIds: { type: [String], default: [] },
-  // Advanced: Store as object { challengeId: 'CHALLENGE_ID', completedAt: Date, claimedAt: Date }
-  // Let's stick to the simple array of IDs for now.
-
 
   // +++ NEW: Price Alerts +++
   priceAlerts: [priceAlertSchema],
@@ -162,17 +167,20 @@ userSchema.pre('save', async function(next) {
   // Only hash the password if it has been modified (or is new)
   if (!this.isModified('password')) return next();
   try {
+    // console.log(`Hashing password for user ${this._id || this.email}...`); // Optional debug log
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    // console.log(`Password hashed for user ${this._id || this.email}.`); // Optional debug log
     next();
   } catch (error) {
+    console.error("Error hashing password:", error); // Log error
     next(error); // Pass error to the next middleware/handler
   }
 });
 
 // --- Compare Entered Password Method ---
 userSchema.methods.matchPassword = async function(enteredPassword) {
-  // Ensure password exists before comparing (prevents errors on new user without password yet?)
+  // Ensure password exists before comparing
   if (!this.password) return false;
   return await bcrypt.compare(enteredPassword, this.password);
 };
@@ -214,5 +222,5 @@ userSchema.methods.getEmailVerificationOtp = function() {
 };
 
 // --- Create and Export User Model ---
-// Using the export style requested in the update instructions
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+module.exports = User;
