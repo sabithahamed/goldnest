@@ -1,6 +1,6 @@
 # 🪙 GoldNest – Gold-Based Micro Investment Platform
 
-> Built with ❤️ by Team Code Mavericks for Devthon 2.0 Final Round
+> Built with ❤️ by Team Code Mavericks
 
 GoldNest is a revolutionary web-based micro-investment platform that enables Sri Lankans to invest in **gold starting from just Rs. 100**. Combining the power of **blockchain**, **AI**, and **fintech**, our platform provides a secure, gamified, and transparent way for anyone to grow their wealth and hedge against inflation through gold-backed digital tokens.
 
@@ -9,12 +9,6 @@ GoldNest is a revolutionary web-based micro-investment platform that enables Sri
 ## 🚀 Live Demo
 
 👉 [Access the Live Web App](https://goldnest.pages.dev/)
-
----
-https://youtu.be/SWxawZ3ywLU
-## 🎥 Demo Video
-
-🎬 [Watch the 3-Minute Feature Demo](https://youtu.be/SWxawZ3ywLU)
 
 ---
 
