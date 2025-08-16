@@ -1,5 +1,6 @@
+// backend/services/aiSuggestionService.js
 const Groq = require("groq-sdk");
-const { getRecentGoldData } = require('../utils/goldDataUtils');
+const { getRecentGoldData, getGoldMarketSummary } = require('../utils/goldDataUtils'); // <-- Add getGoldMarketSummary
 
 const groqApiKey = process.env.GROQ_API_KEY;
 const groq = groqApiKey ? new Groq({ apiKey: groqApiKey }) : null;
@@ -179,9 +180,47 @@ async function getPriceTrendSummary() {
     }
 }
 
+
+// --- NEW FUNCTION: AI Market Outlook ---
+async function getMarketOutlookSuggestion() {
+    if (!groq) return "AI service not available.";
+
+    const recentData = getRecentGoldData(30); // Use last 30 days for context
+    const summary = getGoldMarketSummary(); // Get latest stats
+
+    if (!recentData || recentData.length === 0) {
+        console.error("Error or no data from getRecentGoldData for market outlook.");
+        return "Could not retrieve recent gold data.";
+    }
+
+    const formattedData = formatDataForPrompt(recentData);
+    const summaryText = `The current price is around ${summary.latestPricePerGram.toFixed(0)} LKR/g. The daily change is ${summary.priceChangePercent.toFixed(1)}%, and the monthly change is ${summary.monthlyChangePercent.toFixed(1)}%.`;
+
+    const systemPrompt = `You are a neutral financial analyst for GoldNest, a gold investment platform in Sri Lanka. Analyze the provided recent daily gold price data and the current summary. Provide a concise, 2-3 sentence market outlook. Mention the primary trend (e.g., "upward trend," "volatile period," "stabilizing phase") and a potential short-term outlook. Be cautious and avoid definitive predictions or financial advice. Frame it as an analytical summary.`;
+    const userPrompt = `Recent Market Data (LKR/Oz):\n${formattedData}\n\nLatest Summary: ${summaryText}\n\nBased on this, provide a brief market outlook.`;
+
+    try {
+        const chatCompletion = await groq.chat.completions.create({
+            messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userPrompt },
+            ],
+            model: "llama3-70b-8192",
+            temperature: 0.5,
+            max_tokens: 120,
+        });
+        return chatCompletion.choices[0]?.message?.content.trim() || "Could not generate outlook.";
+    } catch (error) {
+        console.error("Groq API Error (Market Outlook):", error);
+        return "Error fetching outlook from AI.";
+    }
+}
+
+
 module.exports = {
     getInvestmentTimingSuggestion,
     getMonthlyGrowthForecast,
     getDashboardOverviewSuggestion,
     getPriceTrendSummary,
+    getMarketOutlookSuggestion, // <-- EXPORT NEW FUNCTION
 };

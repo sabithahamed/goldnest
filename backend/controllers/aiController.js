@@ -55,9 +55,20 @@ const getTrendSummary = async (req, res) => {
     }
 };
 
+const getMarketOutlook = async (req, res) => {
+    try {
+        const outlook = await aiService.getMarketOutlookSuggestion();
+        res.json({ outlook });
+    } catch (error) {
+        console.error("Error in getMarketOutlook controller:", error);
+        res.status(500).json({ message: 'Server error fetching AI market outlook' });
+    }
+};
+
 module.exports = {
     getTimingSuggestion,
     getForecast,
     getOverview,
     getTrendSummary,
+    getMarketOutlook, // <-- EXPORT NEW FUNCTION
 };
