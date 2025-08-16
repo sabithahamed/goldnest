@@ -4,7 +4,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const dotenv = require('dotenv');
 const { sendVerificationEmail, sendPasswordResetEmail } = require('../services/emailService'); // Import email service
-const { createNotification } = require('../services/notificationService'); // <--- Import notification service
+const { createNotification } = require('../services/notificationService'); // Import notification service
+const { createWallet } = require('../services/blockchainService'); // <--- ADDED
 
 dotenv.config();
 
@@ -39,9 +40,15 @@ const registerUser = async (req, res) => {
             return res.status(400).json({ message: 'Invalid user data during creation' });
         }
 
+        // --- Create Blockchain Wallet --- // <--- MODIFIED SECTION
+        const wallet = createWallet();
+        user.blockchainAddress = wallet.address;
+        user.blockchainPrivateKey = wallet.privateKey; // IMPORTANT: In a real app, you MUST encrypt this key before saving!
+
        // --- Send Verification Email ---
        const otp = user.getEmailVerificationOtp(); // Generate OTP and set hash/expiry on user
-       await user.save({ validateBeforeSave: false }); // Save user with OTP details
+       // This save will now include the blockchain details as well
+       await user.save({ validateBeforeSave: false }); // Save user with OTP and wallet details
 
        const emailSent = await sendVerificationEmail(user.email, otp);
        if (!emailSent) {
@@ -108,7 +115,7 @@ const verifyEmail = async (req, res) => {
        user.emailVerificationExpire = undefined;
        await user.save();
 
-       // --- Create welcome notification --- // <--- ADDED
+       // --- Create welcome notification --- //
        try {
             await createNotification(user._id, 'account_welcome', {
                 title: 'Welcome to GoldNest!',
@@ -275,7 +282,7 @@ const resetPassword = async (req, res) => {
       await user.save();
       console.log(`User saved successfully: ${user.email}`);
 
-      // --- Create password changed notification --- // <--- ADDED
+      // --- Create password changed notification --- //
       try {
            await createNotification(user._id, 'password_changed', {
                title: 'Password Changed Successfully',

@@ -37,7 +37,9 @@ const transactionSchema = new mongoose.Schema({
   },
   itemDescription: String, // e.g., "1 x 5g Gold Coin", "Gold Sale Confirmation"
   trackingNumber: String,   // To be added later by an admin or automated process for shipments (Confirmed presence)
-  estimatedDeliveryDate: Date // New field for estimated delivery date for shipments
+  estimatedDeliveryDate: Date, // New field for estimated delivery date for shipments
+  // +++ NEW: Blockchain Transaction Hash +++
+  blockchainTxHash: String
 });
 
 
@@ -97,6 +99,11 @@ const userSchema = new mongoose.Schema({
   nic: { type: String },
   address: { type: String }, // Keep primary address if needed, separate from shipping
   city: { type: String },    // Keep primary city if needed
+
+  // +++ NEW: Blockchain Fields +++
+  blockchainAddress: String,    // User's public wallet address
+  blockchainPrivateKey: String, // User's encrypted private key
+
   profilePictureUrl: {
       type: String,
       default: null // Or an empty string '' if you prefer

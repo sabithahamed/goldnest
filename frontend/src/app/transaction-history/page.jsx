@@ -214,6 +214,24 @@ export default function TransactionHistoryPage() {
                 <td data-label="Status">
                     <span className={`status-badge ${status}`}>{status}</span>
                 </td>
+                {/* START: Added Blockchain Proof Column */}
+                <td data-label="Blockchain Proof">
+                    {tx.blockchainTxHash ? (
+                        <a
+                            // UPDATED URL for AMOY explorer
+                            href={`https://amoy.polygonscan.com/tx/${tx.blockchainTxHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:underline"
+                            title="View transaction on PolygonScan (Amoy)"
+                        >
+                            View on Explorer
+                        </a>
+                    ) : (
+                        'Off-Chain'
+                    )}
+                </td>
+                {/* END: Added Blockchain Proof Column */}
             </tr>
         );
     };
@@ -290,16 +308,19 @@ export default function TransactionHistoryPage() {
                                     <th scope="col">Discount/Fee</th>
                                     <th scope="col">Total</th>
                                     <th scope="col">Status</th>
+                                    {/* START: Added Header */}
+                                    <th scope="col">Blockchain Proof</th>
+                                    {/* END: Added Header */}
                                 </tr>
                             </thead>
                             <tbody>
                                 {loading ? (
                                     [...Array(TRANSACTIONS_PER_PAGE)].map((_, i) => (
-                                        <TransactionRowSkeleton key={i} cols={8} />
+                                        <TransactionRowSkeleton key={i} cols={9} />
                                     ))
                                 ) : error && !userData ? (
                                     <tr>
-                                        <td colSpan="8" className="error-message text-center">
+                                        <td colSpan="9" className="error-message text-center">
                                             {error}
                                         </td>
                                     </tr>
@@ -307,7 +328,7 @@ export default function TransactionHistoryPage() {
                                     paginatedTransactions.map(renderTransactionRow)
                                 ) : (
                                     <tr>
-                                        <td colSpan="8" className="empty-message text-center">
+                                        <td colSpan="9" className="empty-message text-center">
                                             No transactions match your filters.
                                         </td>
                                     </tr>

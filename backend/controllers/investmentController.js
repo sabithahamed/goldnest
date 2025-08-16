@@ -3,9 +3,9 @@ const mongoose = require('mongoose'); // Needed for ObjectId generation and DB i
 const User = require('../models/User');
 const { getGoldMarketSummary } = require('../utils/goldDataUtils');
 const { updateGamificationOnAction } = require('../services/gamificationTriggerService');
-// Corrected potential import path issue - adjust if your structure differs
 const { createNotification } = require('../services/notificationService');
 const { calculateBuyFee } = require('../utils/feeUtils'); // Import the base fee calculation function
+const { mintTokens } = require('../services/blockchainService'); // <--- ADDED
 
 // Helper function for formatting currency
 const formatCurrency = (value) => {
@@ -138,7 +138,11 @@ const makeInvestment = async (req, res) => {
 
         // --- Calculate gold amount purchased ---
         // Calculation based on the investmentAmount (amount intended for gold)
-        const amountGrams = investmentAmount / pricePerGram;
+        let amountGrams = investmentAmount / pricePerGram;
+
+        // Round to a safe number of decimals (e.g., 7) to prevent blockchain errors.
+        // This is plenty of precision for grams of gold.
+        amountGrams = parseFloat(amountGrams.toFixed(7)); 
 
         // --- Update User Balances ---
         user.cashBalanceLKR -= totalCostLKR;
@@ -245,6 +249,30 @@ const makeInvestment = async (req, res) => {
 
         // --- Trigger Post-Action Services (Gamification, Notifications) ---
          if (savedTransaction) {
+            // --- Blockchain Minting --- // <--- NEW SECTION
+            try {
+                const userBlockchainAddress = updatedUser.blockchainAddress;
+                const gramsPurchased = savedTransaction.amountGrams;
+        
+                if (userBlockchainAddress && gramsPurchased > 0) {
+                    console.log(`[Blockchain] Triggering mint for user ${updatedUser._id}`);
+                    const txHash = await mintTokens(userBlockchainAddress, gramsPurchased);
+                    
+                    // Find the transaction again and save the hash
+                    const userToUpdate = await User.findById(userId);
+                    const txToUpdate = userToUpdate.transactions.id(savedTransaction._id);
+                    if (txToUpdate) {
+                        txToUpdate.blockchainTxHash = txHash;
+                        await userToUpdate.save();
+                        console.log(`[Blockchain] Saved TxHash ${txHash} to transaction ${txToUpdate._id}`);
+                    }
+                }
+            } catch (blockchainError) {
+                console.error(`[Blockchain] CRITICAL: Failed to mint tokens for transaction ${savedTransaction._id} but DB was updated. Needs manual reconciliation.`, blockchainError);
+                // In a real app, you would add this failed transaction to a retry queue.
+            }
+
+            // --- Existing Gamification & Notification Logic ---
              try {
                 // Pass investment amount (excluding fee), grams, and fee for gamification rules
                 await updateGamificationOnAction(userId, 'investment', {
@@ -326,12 +354,6 @@ const makeInvestment = async (req, res) => {
         if (error.name === 'ValidationError') {
              return res.status(400).json({ message: 'Validation failed', errors: error.errors });
         }
-        // Check if it's our specific insufficient funds error (constructed earlier)
-        // Note: This check might not work as expected if the error wasn't thrown this way,
-        // but the specific check `user.cashBalanceLKR < totalCostLKR` handles it before this catch block.
-        // if (error.message.startsWith('Insufficient funds')) {
-        //    return res.status(400).json({ message: error.message });
-        //}
         // Generic server error
         res.status(500).json({ message: 'Server error during investment processing. Please try again.' });
     }
