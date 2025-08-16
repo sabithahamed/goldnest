@@ -1,0 +1,152 @@
+/* src/app/marketinternal/MarketInternal.module.css */
+
+.pageWrapper {
+    background-color: #f7fafc; /* A light grey background for the whole page */
+    padding: 1.5rem; /* ~24px padding */
+}
+
+.header {
+    margin-bottom: 1.5rem; /* Space below the main title */
+}
+
+.title {
+    font-size: 1.875rem; /* text-3xl */
+    font-weight: 700; /* font-bold */
+    color: #1a202c; /* A dark grey, almost black */
+}
+
+.metricCardGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 columns on mobile */
+    gap: 1rem; /* ~16px gap */
+    margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) { /* md breakpoint */
+    .metricCardGrid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)); /* 4 columns on desktop */
+    }
+}
+
+.metricCard {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1); /* shadow-md */
+    text-align: center;
+}
+
+.metricLabel {
+    font-size: 0.875rem; /* text-sm */
+    color: #718096; /* A medium grey */
+    margin-bottom: 0.25rem;
+}
+
+.metricValue {
+    font-size: 1.25rem; /* text-xl */
+    font-weight: 700;
+    color: #2d3748; /* A darker grey */
+}
+
+.metricChange {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+}
+
+.positive {
+    color: #38a169; /* Green */
+}
+
+.negative {
+    color: #e53e3e; /* Red */
+}
+
+.chartCard {
+    background-color: #ffffff;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.chartControls {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 0.5rem; /* space-x-2 */
+}
+
+.timeRangeLabel {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #4a5568;
+}
+
+.timeRangeButton {
+    padding: 0.25rem 0.75rem; /* px-3 py-1 */
+    font-size: 0.75rem; /* text-xs */
+    font-weight: 600;
+    border-radius: 9999px; /* rounded-full */
+    transition: background-color 0.2s, color 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.timeRangeButtonActive {
+    background-color: #F8B612; /* Your primary gold color */
+    color: #ffffff;
+}
+
+.timeRangeButtonInactive {
+    background-color: #e2e8f0; /* A light grey */
+    color: #4a5568;
+}
+
+.timeRangeButtonInactive:hover {
+    background-color: #cbd5e0; /* A slightly darker grey on hover */
+}
+
+.chartContainer {
+    height: 20rem; /* h-80, ~320px */
+}
+
+@media (min-width: 768px) {
+    .chartContainer {
+        height: 24rem; /* h-96, ~384px */
+    }
+}
+
+.aiCard {
+    background-color: #ffffff;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.aiTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+}
+
+.aiIcon {
+    color: #F8B612;
+    margin-right: 0.5rem;
+}
+
+.aiText {
+    color: #4a5568;
+    line-height: 1.6;
+}
+
+.disclaimer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #718096;
+    margin-top: 1.5rem;
+}

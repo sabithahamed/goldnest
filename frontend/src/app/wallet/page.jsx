@@ -253,6 +253,23 @@ export default function WalletPage() {
                 <td data-label="Discount/Fee">{feeDisplay}</td>
                 <td data-label="Total">{totalDisplay}</td>
                 <td data-label="Status"><span className={`status-badge ${status}`}>{status}</span></td>
+                {/* --- NEW/UPDATED CODE BLOCK --- */}
+                <td data-label="Blockchain Proof">
+                    {tx.blockchainTxHash ? (
+                        <a
+                            href={`https://amoy.polygonscan.com/tx/${tx.blockchainTxHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="tracking-link" // Using existing link style
+                            title="View transaction on PolygonScan (Amoy)"
+                        >
+                            View on Explorer
+                        </a>
+                    ) : (
+                        'Off-Chain'
+                    )}
+                </td>
+                {/* --- END NEW/UPDATED CODE BLOCK --- */}
             </tr>
         );
     };
@@ -348,16 +365,20 @@ export default function WalletPage() {
                             </div>
                         </div>
                         <table id="transaction-history-table">
-                            <thead><tr><th>Date</th><th>Type</th><th>Cash Amount</th><th>Gold Amount</th><th>Rate</th><th>Discount/Fee</th><th>Total</th><th>Status</th></tr></thead>
+                            {/* --- UPDATED HEADER --- */}
+                            <thead><tr><th>Date</th><th>Type</th><th>Cash Amount</th><th>Gold Amount</th><th>Rate</th><th>Discount/Fee</th><th>Total</th><th>Status</th><th>Blockchain Proof</th></tr></thead>
                             <tbody>
                                 {loading ? (
-                                    [...Array(TRANSACTIONS_PER_PAGE)].map((_, i) => <TransactionRowSkeleton key={i} cols={8} />)
+                                    // --- UPDATED SKELETON COLS ---
+                                    [...Array(TRANSACTIONS_PER_PAGE)].map((_, i) => <TransactionRowSkeleton key={i} cols={9} />)
                                 ) : error && !userData?.transactions ? (
-                                    <tr><td colSpan="8" className="error-message text-center">Error loading transactions.</td></tr>
+                                    // --- UPDATED COLSPAN ---
+                                    <tr><td colSpan="9" className="error-message text-center">Error loading transactions.</td></tr>
                                 ) : paginatedTransactions.length > 0 ? (
                                     paginatedTransactions.map(renderTransactionRow)
                                 ) : (
-                                    <tr><td colSpan="8" className="empty-message text-center">No transactions match your filters.</td></tr>
+                                    // --- UPDATED COLSPAN ---
+                                    <tr><td colSpan="9" className="empty-message text-center">No transactions match your filters.</td></tr>
                                 )}
                             </tbody>
                         </table>
