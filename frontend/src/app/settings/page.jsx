@@ -7,20 +7,14 @@ import NavbarInternal from '@/components/NavbarInternal';
 import FooterInternal from '@/components/FooterInternal';
 import Image from 'next/image';
 import styles from './SettingsPage.module.css';
+import { useModal } from '@/contexts/ModalContext';
 
-// --- Helper Functions ---
+// --- Helper Functions (unchanged) ---
 const formatCurrency = (value, currency = 'LKR', locale = 'si-LK') => {
     const number = Number(value);
-    if (isNaN(number)) {
-        return value;
-    }
+    if (isNaN(number)) return value;
     try {
-        return new Intl.NumberFormat(locale, {
-            style: 'currency',
-            currency: currency,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(number);
+        return new Intl.NumberFormat(locale, { style: 'currency', currency: currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(number);
     } catch (error) {
         console.warn("Currency formatting error:", error);
         return `${currency} ${number.toFixed(2)}`;
@@ -30,28 +24,22 @@ const formatCurrency = (value, currency = 'LKR', locale = 'si-LK') => {
 const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
-        return new Date(dateString).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
+        return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     } catch (error) {
         console.warn("Date formatting error:", error);
         return dateString;
     }
 };
-// --- End Helpers ---
 
+// --- Main Settings Page Component ---
 export default function SettingsPage() {
     const [activeSection, setActiveSection] = useState('profile');
     const [userData, setUserData] = useState(null);
     const [initialData, setInitialData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
     const router = useRouter();
+    const { openGenericModal } = useModal();
 
     const fileInputRef = useRef(null);
     const [profilePicPreview, setProfilePicPreview] = useState('/default-profile-pic.png');
@@ -59,12 +47,8 @@ export default function SettingsPage() {
     useEffect(() => {
         setLoading(true);
         setError('');
-        setSuccessMessage('');
         const token = localStorage.getItem('userToken');
-        if (!token) {
-            router.push('/');
-            return;
-        }
+        if (!token) { router.push('/'); return; }
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
@@ -73,14 +57,12 @@ export default function SettingsPage() {
                 const fetchedData = response.data;
                 setUserData(fetchedData);
                 setInitialData(fetchedData);
+                setProfilePicPreview(fetchedData.profilePictureUrl || '/default-profile-pic.png');
             })
             .catch(err => {
                 console.error("Error fetching settings data:", err);
                 setError(err.response?.data?.message || "Failed to load user data.");
-                if (err.response?.status === 401) {
-                    localStorage.clear();
-                    router.push('/');
-                }
+                if (err.response?.status === 401) { localStorage.clear(); router.push('/'); }
             })
             .finally(() => setLoading(false));
     }, [router]);
@@ -100,23 +82,15 @@ export default function SettingsPage() {
         const file = event.target.files[0];
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
-            reader.onload = (e) => {
-                setProfilePicPreview(e.target.result);
-            };
+            reader.onload = (e) => setProfilePicPreview(e.target.result);
             reader.readAsDataURL(file);
-            console.log("Profile picture selected:", file.name);
-            showSuccessPopup("Profile picture updated (simulated).");
+            openGenericModal("Success", "Profile picture updated (simulated).", "success");
         } else {
-            alert("Please select a valid image file.");
+            openGenericModal("Invalid File", "Please select a valid image file.", "error");
         }
     };
 
     const triggerFileSelect = () => fileInputRef.current?.click();
-
-    const showSuccessPopup = (message) => {
-        setSuccessMessage(message || "Changes saved successfully!");
-        setTimeout(() => setSuccessMessage(''), 3000);
-    };
 
     const renderSectionContent = () => {
         if (loading) return <div className="p-5 text-center">Loading settings...</div>;
@@ -129,7 +103,6 @@ export default function SettingsPage() {
                     userData={userData}
                     setUserData={setUserData}
                     initialData={initialData}
-                    showSuccess={showSuccessPopup}
                     triggerFileSelect={triggerFileSelect}
                     profilePicPreview={profilePicPreview}
                     fileInputRef={fileInputRef}
@@ -138,13 +111,14 @@ export default function SettingsPage() {
                     setInitialData={setInitialData}
                 />;
             case 'payment':
-                return <PaymentSettingsComponent showSuccess={showSuccessPopup} />;
+                // MODIFIED: Pass activeSection to trigger data loading inside the component
+                return <PaymentSettingsComponent activeSection={activeSection} />;
             case 'security':
-                return <SecuritySettingsComponent showSuccess={showSuccessPopup} />;
+                return <SecuritySettingsComponent />;
             case 'price-alerts':
-                return <PriceAlertsComponent showSuccess={showSuccessPopup} />;
+                return <PriceAlertsComponent />;
             case 'preferences':
-                return <PreferencesComponent showSuccess={showSuccessPopup} />;
+                return <PreferencesComponent />;
             case 'account':
                 return <AccountSettingsComponent userData={userData} />;
             case 'help':
@@ -154,7 +128,6 @@ export default function SettingsPage() {
                     userData={userData}
                     setUserData={setUserData}
                     initialData={initialData}
-                    showSuccess={showSuccessPopup}
                     triggerFileSelect={triggerFileSelect}
                     profilePicPreview={profilePicPreview}
                     fileInputRef={fileInputRef}
@@ -184,36 +157,24 @@ export default function SettingsPage() {
                     {renderSectionContent()}
                 </div>
             </section>
-            {successMessage && (
-                <div className={styles.successPopup} style={{ display: 'block' }}>
-                    <h3>Success!</h3>
-                    <p>{successMessage}</p>
-                    <button className={`${styles.btnPrimary} mt-4`} onClick={() => setSuccessMessage('')}>Close</button>
-                </div>
-            )}
             <FooterInternal />
         </>
     );
 }
 
-// --- General Settings Component ---
-function GeneralSettingsComponent({ userData, setUserData, initialData, showSuccess, triggerFileSelect, profilePicPreview, fileInputRef, handleProfilePicChange, handleThemeChange, setInitialData }) {
+// --- General Settings Component (Unchanged) ---
+function GeneralSettingsComponent({ userData, setUserData, initialData, triggerFileSelect, profilePicPreview, fileInputRef, handleProfilePicChange, handleThemeChange, setInitialData }) {
+    const { openGenericModal } = useModal();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
-    const handleChange = (e) => {
-        setUserData({ ...userData, [e.target.id]: e.target.value });
-    };
+    const handleChange = (e) => setUserData({ ...userData, [e.target.id]: e.target.value });
 
     const handleSave = async () => {
         setIsSubmitting(true);
         setError('');
         const token = localStorage.getItem('userToken');
-        if (!token) {
-            setError('Authentication error. Please log in again.');
-            setIsSubmitting(false);
-            return;
-        }
+        if (!token) { setError('Authentication error. Please log in again.'); setIsSubmitting(false); return; }
         const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
@@ -224,7 +185,7 @@ function GeneralSettingsComponent({ userData, setUserData, initialData, showSucc
             const updatedUserData = { ...userData, ...response.data };
             setUserData(updatedUserData);
             setInitialData(updatedUserData);
-            showSuccess("General settings saved successfully!");
+            openGenericModal("Success", "General settings saved successfully!", "success");
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to save settings.');
             console.error("Save Profile Error:", err);
@@ -237,14 +198,11 @@ function GeneralSettingsComponent({ userData, setUserData, initialData, showSucc
         if (initialData) {
             setUserData(initialData);
             handleThemeChange(initialData?.themePreference || 'white');
-            setProfilePicPreview(initialData?.profilePictureUrl || '/default-profile-pic.png');
             setError('');
         }
     };
 
-    if (!userData) {
-        return <div className="p-4 text-center">Loading user data...</div>;
-    }
+    if (!userData) return <div className="p-4 text-center">Loading user data...</div>;
 
     return (
         <div id="profile" className={`${styles.tabContent} ${styles.active}`}>
@@ -252,7 +210,7 @@ function GeneralSettingsComponent({ userData, setUserData, initialData, showSucc
             <p className={styles.lastUpdated}>Last Updated: {userData.updatedAt ? formatDate(userData.updatedAt) : 'N/A'}</p>
             {error && <p className={`${styles.error} text-center mb-4`}>{error}</p>}
             <div className={styles.profilePic}>
-                <Image src={profilePicPreview} alt="Profile Picture" id="profile-pic-preview" width={80} height={80} className="rounded-full object-cover border-2 border-gray-300" />
+                <Image src={profilePicPreview} alt="Profile Picture" width={80} height={80} className="rounded-full object-cover border-2 border-gray-300" />
                 <button onClick={triggerFileSelect} className={styles.btnPrimary} type="button">Change Picture</button>
                 <input type="file" id="profile-pic-upload" accept="image/*" ref={fileInputRef} onChange={handleProfilePicChange} style={{ display: 'none' }} />
             </div>
@@ -272,7 +230,6 @@ function GeneralSettingsComponent({ userData, setUserData, initialData, showSucc
             <div className={styles.formGroup}>
                 <label htmlFor="address">Address</label>
                 <textarea id="address" name="address" value={userData.address || ''} onChange={handleChange} className={styles.inputField} rows="3"></textarea>
-                
             </div>
             <div className={styles.formGroup}>
                 <label htmlFor="languagePreference">Language</label>
@@ -284,12 +241,7 @@ function GeneralSettingsComponent({ userData, setUserData, initialData, showSucc
             </div>
             <div className={styles.formGroup}>
                 <label htmlFor="theme">Theme</label>
-                <select
-                    id="theme"
-                    value={userData?.themePreference || (document.body.classList.contains('dark') ? 'dark' : 'white')}
-                    onChange={(e) => handleThemeChange(e.target.value)}
-                    className={`${styles.inputField} bg-white`}
-                >
+                <select id="theme" value={userData?.themePreference || 'white'} onChange={(e) => handleThemeChange(e.target.value)} className={`${styles.inputField} bg-white`}>
                     <option value="white">White</option>
                     <option value="dark">Dark</option>
                 </select>
@@ -304,80 +256,90 @@ function GeneralSettingsComponent({ userData, setUserData, initialData, showSucc
     );
 }
 
-// --- Payment Settings Component ---
-function PaymentSettingsComponent({ showSuccess }) {
+
+// --- CORRECTED Payment Settings Component ---
+// Place this inside your frontend/src/app/settings/page.jsx file
+
+function PaymentSettingsComponent({ activeSection }) { // Accept activeSection prop
+    const { openGenericModal, openConfirmModal } = useModal();
+    
+    // This component now correctly manages its own state
     const [autoInvestPlans, setAutoInvestPlans] = useState([]);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [errorPlans, setErrorPlans] = useState('');
     const [showAddForm, setShowAddForm] = useState(false);
     const [newPlanData, setNewPlanData] = useState({
-        amountLKR: '',
-        frequency: 'daily',
-        date: '',
-        paymentMethod: 'wallet-cash',
+        amountLKR: '', frequency: 'daily', date: '', paymentMethod: 'wallet-cash',
     });
+    
     const [savingPlan, setSavingPlan] = useState(false);
     const [togglingId, setTogglingId] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
 
-    useEffect(() => {
-        setLoadingPlans(true);
-        setErrorPlans('');
-        const token = localStorage.getItem('userToken');
-        if (!token) {
-            setErrorPlans("Authentication required. Please log in.");
-            setLoadingPlans(false);
-            return;
-        }
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+    const AUTOPAY_API_URL = '/api/users/autopayments';
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
-        axios.get(`${backendUrl}/api/users/auto-invest`, config)
-            .then(response => setAutoInvestPlans(response.data || []))
-            .catch(err => {
-                console.error("Error fetching auto-invest plans:", err);
-                setErrorPlans(err.response?.data?.message || "Could not load auto-invest plans.");
-            })
-            .finally(() => setLoadingPlans(false));
-    }, []);
+    // CORRECTED: This useEffect now fetches fresh data ONLY when this tab is opened.
+    useEffect(() => {
+        const fetchPlans = () => {
+            setLoadingPlans(true);
+            setErrorPlans('');
+            const token = localStorage.getItem('userToken');
+            if (!token) {
+                setErrorPlans("Authentication required.");
+                setLoadingPlans(false);
+                return;
+            }
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+
+            axios.get(`${backendUrl}${AUTOPAY_API_URL}`, config)
+                .then(response => {
+                    setAutoInvestPlans(response.data || []);
+                })
+                .catch(err => {
+                    console.error("Error fetching auto-invest plans:", err);
+                    setErrorPlans(err.response?.data?.message || "Could not load auto-invest plans.");
+                })
+                .finally(() => {
+                    setLoadingPlans(false);
+                });
+        };
+
+        if (activeSection === 'payment') {
+            fetchPlans();
+        }
+    }, [activeSection]); // This dependency is the key to the fix
 
     const handleAddPlan = async (e) => {
         e.preventDefault();
         const amount = Number(newPlanData.amountLKR);
-        if (!amount || amount < 100) {
-            setErrorPlans("Please enter a valid amount (minimum Rs. 100).");
-            return;
-        }
-        if (newPlanData.frequency === 'monthly' && !newPlanData.date) {
-            setErrorPlans("Please select a date for monthly auto-investment.");
-            return;
-        }
+        if (!amount || amount < 100) { setErrorPlans("Minimum amount is Rs. 100."); return; }
+        if (newPlanData.frequency === 'monthly' && !newPlanData.date) { setErrorPlans("Please select a day for monthly plans."); return; }
+
         setSavingPlan(true);
         setErrorPlans('');
         const token = localStorage.getItem('userToken');
-        if (!token) {
-            setErrorPlans('Authentication Error.');
-            setSavingPlan(false);
-            return;
-        }
+        if (!token) { setErrorPlans('Authentication Error.'); setSavingPlan(false); return; }
+        
         const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
-
+        
         try {
             const payload = {
                 amountLKR: amount,
                 frequency: newPlanData.frequency,
-                date: newPlanData.frequency === 'monthly' ? Number(newPlanData.date) : undefined,
+                dayOfMonth: newPlanData.frequency === 'monthly' ? Number(newPlanData.date) : undefined,
                 paymentMethod: newPlanData.paymentMethod,
             };
-            const { data: addedPlan } = await axios.post(`${backendUrl}/api/users/auto-invest`, payload, config);
+
+            const { data: addedPlan } = await axios.post(`${backendUrl}${AUTOPAY_API_URL}`, payload, config);
+            
             setAutoInvestPlans(prev => [...prev, addedPlan]);
+
             setShowAddForm(false);
             setNewPlanData({ amountLKR: '', frequency: 'daily', date: '', paymentMethod: 'wallet-cash' });
-            showSuccess("Auto-Invest plan added successfully!");
+            openGenericModal("Success", "Auto-Invest plan added successfully!", "success");
         } catch (err) {
-            setErrorPlans(err.response?.data?.message || "Failed to add auto-invest plan.");
-            console.error("Add Auto-Invest Plan Error:", err);
+            setErrorPlans(err.response?.data?.message || "Failed to add plan.");
         } finally {
             setSavingPlan(false);
         }
@@ -387,49 +349,45 @@ function PaymentSettingsComponent({ showSuccess }) {
         setTogglingId(id);
         setErrorPlans('');
         const token = localStorage.getItem('userToken');
-        if (!token) {
-            setErrorPlans('Authentication Error.');
-            setTogglingId(null);
-            return;
-        }
+        if (!token) { setErrorPlans('Authentication Error.'); setTogglingId(null); return; }
         const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
         try {
-            const { data: updatedPlan } = await axios.put(`${backendUrl}/api/users/auto-invest/${id}`, { isActive: !currentStatus }, config);
-            setAutoInvestPlans(prev => prev.map(plan => plan._id === id ? updatedPlan : plan));
-            showSuccess(`Auto-Invest plan ${updatedPlan.isActive ? 'activated' : 'paused'}.`);
+            const { data: updatedPlan } = await axios.put(`${backendUrl}${AUTOPAY_API_URL}/${id}`, { isActive: !currentStatus }, config);
+
+            // This local state update is what fixes the button display issue instantly
+            setAutoInvestPlans(prev => prev.map(plan => 
+                plan._id === id ? updatedPlan : plan
+            ));
+
+            openGenericModal("Success", `Auto-Invest plan ${updatedPlan.isActive ? 'activated' : 'paused'}.`, "success");
         } catch (err) {
-            setErrorPlans(err.response?.data?.message || "Failed to toggle auto-invest plan status.");
-            console.error("Toggle Auto-Invest Plan Error:", err);
+            setErrorPlans(err.response?.data?.message || "Failed to toggle status.");
         } finally {
             setTogglingId(null);
         }
     };
 
-    const handleDeletePlan = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this auto-invest plan?")) return;
-        setDeletingId(id);
-        setErrorPlans('');
-        const token = localStorage.getItem('userToken');
-        if (!token) {
-            setErrorPlans('Authentication Error.');
-            setDeletingId(null);
-            return;
-        }
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+    const handleDeletePlan = (id) => {
+        openConfirmModal('Confirm Deletion', 'Are you sure you want to delete this plan?', async () => {
+            setDeletingId(id);
+            setErrorPlans('');
+            const token = localStorage.getItem('userToken');
+            if (!token) { setErrorPlans('Authentication Error.'); setDeletingId(null); return; }
+            const config = { headers: { Authorization: `Bearer ${token}` } };
 
-        try {
-            await axios.delete(`${backendUrl}/api/users/auto-invest/${id}`, config);
-            setAutoInvestPlans(prev => prev.filter(plan => plan._id !== id));
-            showSuccess("Auto-Invest plan deleted.");
-        } catch (err) {
-            setErrorPlans(err.response?.data?.message || "Failed to delete auto-invest plan.");
-            console.error("Delete Auto-Invest Plan Error:", err);
-        } finally {
-            setDeletingId(null);
-        }
+            try {
+                await axios.delete(`${backendUrl}${AUTOPAY_API_URL}/${id}`, config);
+                
+                setAutoInvestPlans(prev => prev.filter(plan => plan._id !== id));
+
+                openGenericModal("Success", "Auto-Invest plan deleted.", "success");
+            } catch (err) {
+                setErrorPlans(err.response?.data?.message || "Failed to delete plan.");
+            } finally {
+                setDeletingId(null);
+            }
+        });
     };
 
     const handleReset = () => {
@@ -469,15 +427,10 @@ function PaymentSettingsComponent({ showSuccess }) {
                         <div className={styles.formGroup}>
                             <label htmlFor="auto-invest-amount">Amount (Rs.)</label>
                             <input
-                                type="number"
-                                id="auto-invest-amount"
+                                type="number" id="auto-invest-amount"
                                 value={newPlanData.amountLKR}
                                 onChange={(e) => setNewPlanData({ ...newPlanData, amountLKR: e.target.value })}
-                                min="100"
-                                step="100"
-                                required
-                                className={styles.inputField}
-                                placeholder="Min Rs. 100"
+                                min="100" step="100" required className={styles.inputField} placeholder="Min Rs. 100"
                             />
                         </div>
                         <div className={styles.formGroup}>
@@ -495,14 +448,13 @@ function PaymentSettingsComponent({ showSuccess }) {
                         </div>
                         {newPlanData.frequency === 'monthly' && (
                             <div className={styles.formGroup}>
-                                <label htmlFor="auto-invest-date">Select Date</label>
+                                <label htmlFor="auto-invest-date">Day of Month</label>
                                 <select
-                                    id="auto-invest-date"
-                                    value={newPlanData.date}
+                                    id="auto-invest-date" value={newPlanData.date}
                                     onChange={(e) => setNewPlanData({ ...newPlanData, date: e.target.value })}
-                                    className={`${styles.inputField} bg-white`}
+                                    className={`${styles.inputField} bg-white`} required
                                 >
-                                    <option value="">Select Day</option>
+                                    <option value="">Select Day (1-28)</option>
                                     {[...Array(28)].map((_, i) => (
                                         <option key={i + 1} value={i + 1}>{i + 1}</option>
                                     ))}
@@ -512,14 +464,11 @@ function PaymentSettingsComponent({ showSuccess }) {
                         <div className={styles.formGroup}>
                             <label htmlFor="auto-invest-payment">Payment Method</label>
                             <select
-                                id="auto-invest-payment"
-                                value={newPlanData.paymentMethod}
+                                id="auto-invest-payment" value={newPlanData.paymentMethod}
                                 onChange={(e) => setNewPlanData({ ...newPlanData, paymentMethod: e.target.value })}
                                 className={`${styles.inputField} bg-white`}
                             >
                                 <option value="wallet-cash">Wallet Cash</option>
-                                <option value="payhere">PayHere (Card/Bank)</option>
-                                <option value="paypal">PayPal</option>
                             </select>
                         </div>
                         <div className={styles.actionButtons}>
@@ -542,21 +491,17 @@ function PaymentSettingsComponent({ showSuccess }) {
                                 <div>
                                     <p className={!plan.isActive ? styles.inactive : ''}>
                                         {formatCurrency(plan.amountLKR)} {plan.frequency}
-                                        {plan.frequency === 'monthly' && plan.date ? ` on day ${plan.date}` : ''}
+                                        {plan.frequency === 'monthly' && plan.dayOfMonth ? ` on day ${plan.dayOfMonth}` : ''}
                                     </p>
                                     <p className={`text-xs text-gray-500 ${!plan.isActive ? styles.inactive : ''}`}>
-                                        Payment: {plan.paymentMethod === 'wallet-cash' ? 'Wallet Cash' : plan.paymentMethod === 'payhere' ? 'PayHere' : 'PayPal'} | Status: {plan.isActive ? 'Active' : 'Paused'}
+                                        Payment: {plan.paymentMethod === 'wallet-cash' ? 'Wallet Cash' : 'N/A'} | Status: {plan.isActive ? 'Active' : 'Paused'}
                                     </p>
                                 </div>
                                 <div className={styles.autoInvestActions}>
                                     <button
                                         onClick={() => handleToggleActive(plan._id, plan.isActive)}
                                         disabled={togglingId === plan._id || deletingId === plan._id}
-                                        className={`text-xs font-medium px-2 py-1 rounded transition-colors duration-150 ${
-                                            plan.isActive
-                                                ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                                                : 'bg-green-100 text-green-700 hover:bg-green-200'
-                                        } ${togglingId === plan._id ? 'opacity-50 cursor-wait' : ''}`}
+                                        className={`text-xs font-medium px-2 py-1 rounded transition-colors duration-150 ${plan.isActive ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} ${togglingId === plan._id ? 'opacity-50 cursor-wait' : ''}`}
                                     >
                                         {togglingId === plan._id ? '...' : (plan.isActive ? 'Pause' : 'Activate')}
                                     </button>
@@ -579,15 +524,19 @@ function PaymentSettingsComponent({ showSuccess }) {
             </div>
             <p className="text-sm text-gray-500 my-4">Note: Default method selection is simulated.</p>
             <div className={styles.actionButtons}>
-                <button className={`${styles.btnPrimary}`} onClick={() => showSuccess("Payment settings saved (Simulated).")}>Save Changes</button>
-                <button className={`${styles.btnSecondary}`} onClick={() => alert("Resetting payment settings (Simulated).")}>Reset</button>
+                <button className={`${styles.btnPrimary}`} onClick={() => openGenericModal("Info", "Payment settings saved (Simulated).", "info")}>Save Changes</button>
+                <button className={`${styles.btnSecondary}`} onClick={() => openGenericModal("Info", "Resetting payment settings (Simulated).", "info")}>Reset</button>
             </div>
         </div>
     );
 }
 
+
+// --- The rest of the components (Security, PriceAlerts, etc.) remain unchanged ---
 // --- Security Settings Component ---
-function SecuritySettingsComponent({ showSuccess }) {
+function SecuritySettingsComponent() {
+    const { openGenericModal } = useModal(); // Use hook directly
+    // ... all other states from the original component
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -623,7 +572,7 @@ function SecuritySettingsComponent({ showSuccess }) {
         try {
             await axios.put(`${backendUrl}/api/users/change-password`, { currentPassword, newPassword }, config);
             setPwdSuccess('Password changed successfully!');
-            showSuccess('Password changed successfully!');
+            openGenericModal("Success", "Password changed successfully!", "success"); // UPDATED
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
@@ -635,7 +584,7 @@ function SecuritySettingsComponent({ showSuccess }) {
             setPwdLoading(false);
         }
     };
-
+    
     const handleResetPasswordFields = () => {
         setCurrentPassword('');
         setNewPassword('');
@@ -646,10 +595,12 @@ function SecuritySettingsComponent({ showSuccess }) {
 
     const handleToggle = (setter, currentVal, featureName) => {
         setter(!currentVal);
-        alert(`${featureName} toggle is simulated for this demo.`);
+        // REPLACED window.alert with generic modal
+        openGenericModal("Info", `${featureName} toggle is simulated for this demo.`, "info");
     };
 
     return (
+        // JSX for SecuritySettingsComponent remains largely the same...
         <div id="security" className={`${styles.tabContent} ${styles.active}`}>
             <h2>Security Settings</h2>
             <h3 className={styles.sectionSubheading}>Change Your Password</h3>
@@ -696,7 +647,8 @@ function SecuritySettingsComponent({ showSuccess }) {
 }
 
 // --- Price Alerts Component ---
-function PriceAlertsComponent({ showSuccess }) {
+function PriceAlertsComponent() {
+    const { openGenericModal, openConfirmModal } = useModal(); // ADD openConfirmModal
     const [alerts, setAlerts] = useState([]);
     const [loadingAlerts, setLoadingAlerts] = useState(true);
     const [errorAlerts, setErrorAlerts] = useState('');
@@ -754,7 +706,7 @@ function PriceAlertsComponent({ showSuccess }) {
             setAlerts(prev => [...prev, addedAlert]);
             setShowAddForm(false);
             setNewAlertData({ targetPriceLKRPerGram: '', condition: 'below' });
-            showSuccess("Price alert added successfully!");
+            openGenericModal("Success", "Price alert added successfully!", "success");
         } catch (err) {
             setErrorAlerts(err.response?.data?.message || "Failed to add alert.");
             console.error("Add Price Alert Error:", err);
@@ -763,29 +715,35 @@ function PriceAlertsComponent({ showSuccess }) {
         }
     };
 
-    const handleDeleteAlert = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this price alert?")) return;
-        setDeletingId(id);
-        setErrorAlerts('');
-        const token = localStorage.getItem('userToken');
-        if (!token) {
-            setErrorAlerts('Authentication Error.');
-            setDeletingId(null);
-            return;
-        }
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+    const handleDeleteAlert = (id) => {
+        // CORRECTED: Use openConfirmModal
+        openConfirmModal(
+            'Confirm Deletion',
+            'Are you sure you want to delete this price alert?',
+            async () => {
+                setDeletingId(id);
+                setErrorAlerts('');
+                const token = localStorage.getItem('userToken');
+                if (!token) {
+                    setErrorAlerts('Authentication Error.');
+                    setDeletingId(null);
+                    return;
+                }
+                const config = { headers: { Authorization: `Bearer ${token}` } };
+                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
-        try {
-            await axios.delete(`${backendUrl}/api/users/price-alerts/${id}`, config);
-            setAlerts(prev => prev.filter(alert => alert._id !== id));
-            showSuccess("Price alert deleted.");
-        } catch (err) {
-            setErrorAlerts(err.response?.data?.message || "Failed to delete alert.");
-            console.error("Delete Price Alert Error:", err);
-        } finally {
-            setDeletingId(null);
-        }
+                try {
+                    await axios.delete(`${backendUrl}/api/users/price-alerts/${id}`, config);
+                    setAlerts(prev => prev.filter(alert => alert._id !== id));
+                    openGenericModal("Success", "Price alert deleted.", "success");
+                } catch (err) {
+                    setErrorAlerts(err.response?.data?.message || "Failed to delete alert.");
+                    console.error("Delete Price Alert Error:", err);
+                } finally {
+                    setDeletingId(null);
+                }
+            }
+        );
     };
 
     const handleToggleActive = async (id, currentStatus) => {
@@ -803,7 +761,7 @@ function PriceAlertsComponent({ showSuccess }) {
         try {
             const { data: updatedAlert } = await axios.put(`${backendUrl}/api/users/price-alerts/${id}`, { isActive: !currentStatus }, config);
             setAlerts(prev => prev.map(a => a._id === id ? updatedAlert : a));
-            showSuccess(`Alert ${updatedAlert.isActive ? 'activated' : 'paused'}.`);
+            openGenericModal("Success", `Alert ${updatedAlert.isActive ? 'activated' : 'paused'}.`, "success");
         } catch (err) {
             setErrorAlerts(err.response?.data?.message || "Failed to toggle alert status.");
             console.error("Toggle Price Alert Error:", err);
@@ -813,7 +771,7 @@ function PriceAlertsComponent({ showSuccess }) {
     };
 
     return (
-        <div id="price-alerts" className={`${styles.tabContent} ${styles.active}`}>
+         <div id="price-alerts" className={`${styles.tabContent} ${styles.active}`}>
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold m-0">Price Alerts</h2>
                 <button onClick={() => { setShowAddForm(!showAddForm); setErrorAlerts(''); }} className={styles.btnSecondary}>
@@ -887,19 +845,30 @@ function PriceAlertsComponent({ showSuccess }) {
 
 // --- Account Settings Component ---
 function AccountSettingsComponent({ userData }) {
+    const { openGenericModal, openConfirmModal } = useModal();
+
     const handleDeactivate = () => {
-        if (window.confirm('Are you sure? Deactivating requires redeeming/selling all assets and may require contacting support to reactivate.')) {
-            alert('Account deactivation initiated (Simulated). Please contact support for the next steps.');
-        }
-    };
-    const handleLogout = () => {
-        if (window.confirm('Are you sure you want to logout?')) {
-            localStorage.removeItem('userToken');
-            localStorage.removeItem('userName');
-            window.location.href = '/';
-        }
+        openConfirmModal(
+            'Confirm Deactivation',
+            'Are you sure? This may require contacting support to reactivate.',
+            () => {
+                openGenericModal("Deactivation Initiated", "Account deactivation initiated (Simulated). Please contact support.", "info");
+            }
+        );
     };
 
+    const handleLogout = () => {
+        openConfirmModal(
+            'Confirm Logout',
+            'Are you sure you want to log out?',
+            () => {
+                localStorage.removeItem('userToken');
+                localStorage.removeItem('userName');
+                window.location.href = '/';
+            }
+        );
+    };
+    
     if (!userData) {
         return <div className="p-4 text-center">Loading account data...</div>;
     }
@@ -924,7 +893,6 @@ function AccountSettingsComponent({ userData }) {
         </div>
     );
 }
-
 // --- Help Section Component ---
 function HelpSectionComponent() {
     return (
@@ -942,9 +910,11 @@ function HelpSectionComponent() {
 }
 
 // --- Preferences Component ---
-function PreferencesComponent({ showSuccess }) {
-    const handleSave = () => showSuccess("Preferences saved (Simulated).");
-    const handleReset = () => alert("Resetting preferences (Simulated).");
+function PreferencesComponent() {
+    const { openGenericModal } = useModal();
+
+    const handleSave = () => openGenericModal("Success", "Preferences saved (Simulated).", "success");
+    const handleReset = () => openGenericModal("Info", "Resetting preferences (Simulated).", "info");
 
     return (
         <div id="preferences" className={`${styles.tabContent} ${styles.active}`}>
