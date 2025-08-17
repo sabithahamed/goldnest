@@ -4,6 +4,7 @@ const { getGoldMarketSummary } = require('../utils/goldDataUtils'); // Need curr
 const { calculateSellFee } = require('../utils/feeUtils'); // Import sell fee calculator
 const { createNotification } = require('../services/notificationService'); // Added for notifications
 const { updateGamificationOnAction } = require('../services/gamificationTriggerService'); // Added for gamification
+const { transferFromUserToTreasury } = require('../services/blockchainService'); // <-- NEW IMPORT
 
 // Helper function for formatting currency (can be moved to a utils file if used elsewhere)
 const formatCurrency = (value) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(value);
@@ -37,6 +38,7 @@ const sellGold = async (req, res) => {
         }
 
         // --- Get User ---
+        // We fetch the full user object once, which should include the private key
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
@@ -58,14 +60,7 @@ const sellGold = async (req, res) => {
              return res.status(500).json({ message: 'Calculation error resulted in negative proceeds. Please contact support.' });
         }
 
-
-        // --- Update Balances (Atomic operation recommended in production - see notes below) ---
-        // Ensure gold balance doesn't go negative due to floating point math
-        user.goldBalanceGrams = Math.max(0, user.goldBalanceGrams - requiredGrams);
-        user.cashBalanceLKR += netProceedsLKR; // Add NET proceeds to cash wallet
-
-        // --- Add Transaction Record ---
-        // Note: The transaction details are added *before* saving, so they are part of the atomic save.
+        // --- Prepare Transaction Record ---
         const transactionData = {
             type: 'sell_gold',
             amountGrams: requiredGrams, // Record grams sold
@@ -75,6 +70,28 @@ const sellGold = async (req, res) => {
             description: `Sold ${requiredGrams.toFixed(4)}g gold @ ~${currentPricePerGram.toFixed(0)} LKR/g. Received ${formatCurrency(netProceedsLKR)} (after ${formatCurrency(sellFeeLKR)} fee)`,
             status: 'completed' // Selling is usually instant
         };
+
+        // --- NEW: Blockchain Transfer Back to Treasury ---
+        try {
+            // We use the user object fetched earlier for the private key
+            const userPrivateKey = user.blockchainPrivateKey;
+
+            if (userPrivateKey && requiredGrams > 0) {
+                const txHash = await transferFromUserToTreasury(userPrivateKey, requiredGrams);
+                // Save the hash to the new transaction record
+                transactionData.blockchainTxHash = txHash;
+            }
+        } catch (blockchainError) {
+            console.error(`[Blockchain] CRITICAL: Sell processed in DB but token transfer FROM USER failed for user ${userId}. Needs manual reconciliation.`, blockchainError);
+            // The process continues to ensure the user's DB state is correct.
+            // A reconciliation service should monitor for transactions missing a hash.
+        }
+        // --- END NEW ---
+
+        // --- Update Balances and Save ---
+        // Ensure gold balance doesn't go negative due to floating point math
+        user.goldBalanceGrams = Math.max(0, user.goldBalanceGrams - requiredGrams);
+        user.cashBalanceLKR += netProceedsLKR; // Add NET proceeds to cash wallet
         user.transactions.push(transactionData);
 
         const updatedUser = await user.save();

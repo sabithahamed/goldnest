@@ -1,6 +1,7 @@
 // backend/controllers/adminInventoryController.js
 const User = require('../models/User');
 const InventoryLog = require('../models/InventoryLog');
+const { mintToTreasury } = require('../services/blockchainService');
 
 // @desc    Get all inventory statistics
 // @route   GET /api/admin/inventory/stats
@@ -62,6 +63,18 @@ const addPhysicalGold = async (req, res) => {
         });
 
         await newLog.save();
+
+        // --- NEW: Mint corresponding tokens to the treasury ---
+        try {
+            const txHash = await mintToTreasury(parseFloat(gramsAdded));
+            console.log(`[Admin] Minted ${gramsAdded}g to treasury, tx: ${txHash}`);
+        } catch (blockchainError) {
+            console.error(`CRITICAL: DB updated with ${gramsAdded}g, but blockchain mint failed!`, blockchainError);
+            // In a real app, this would trigger an alert for manual reconciliation.
+            // For now, we proceed but log the critical error.
+        }
+        // --- END NEW ---
+
         res.status(201).json({ message: 'Physical gold added to reserve successfully.', log: newLog });
     } catch (error) {
         console.error('Error adding physical gold:', error);
