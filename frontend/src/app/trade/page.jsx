@@ -212,58 +212,64 @@ export default function TradePage() {
         setAutoInvestDate(e.target.value);
     };
 
+    // --- NEW: FULLY IMPLEMENTED handleConfirmTrade FUNCTION ---
     const handleConfirmTrade = async () => {
         setError('');
         const currentAmount = parseFloat(amount) || 0;
 
-        // --- All validation logic remains the same ---
-        if (currentAmount <= 0) { /* ... */ return; }
-        if (!tradeSummary.meetsMinimum) { /* ... */ return; }
-        if (!tradeSummary.isValid) { /* ... */ return; }
-        if (!paymentMethod) { setError(`Please select a payment method.`); return; }
-        if (tradeType === 'buy' && paymentMethod === 'wallet-cash' && tradeSummary.totalCashValue > cashBalance) { /* ... */ return; }
-        if (tradeType === 'sell' && tradeSummary.goldToTrade > goldBalance) { /* ... */ return; }
+        // --- Validation logic ---
+        if (currentAmount <= 0) { setError(`Please enter a valid amount.`); return; }
+        if (!tradeSummary.meetsMinimum) { setError(`Minimum amount not met.`); return; }
+        if (!tradeSummary.isValid) { setError(`Invalid trade details.`); return; }
+        if (!paymentMethod) { setError(`Please select a method.`); return; }
+        if (tradeType === 'buy' && paymentMethod === 'wallet-cash' && tradeSummary.totalCashValue > cashBalance) { setError(`Insufficient wallet cash.`); return; }
+        if (tradeType === 'sell' && tradeSummary.goldToTrade > goldBalance) { setError(`Insufficient gold balance.`); return; }
+        
         let autoInvestText = '';
-        if (tradeType === 'buy' && autoInvest) { /* ... */ }
+        if (tradeType === 'buy' && autoInvest) {
+             if (autoInvestFrequency === 'monthly' && !autoInvestDate) {
+                setError('Please select a day for monthly auto-invest.');
+                return;
+             }
+             autoInvestText = `${autoInvestFrequency}${autoInvestFrequency === 'monthly' ? ` on day ${autoInvestDate}` : ''}`;
+        }
 
-        // --- Check payment method and redirect if needed ---
+        // --- Redirect logic for Card/Bank purchase ---
         if (tradeType === 'buy' && (paymentMethod === 'payhere' || paymentMethod === 'paypal')) {
-            
-            // Store the details needed FOR THE INVESTMENT ITSELF in sessionStorage.
-            // This is the BASE amount, not the total cost.
             sessionStorage.setItem('investmentDetails', JSON.stringify({
                 amountLKR: currentAmount,
                 autoInvest: autoInvest,
                 autoInvestFrequency: autoInvest ? autoInvestFrequency : null,
                 dayOfMonth: autoInvest && autoInvestFrequency === 'monthly' ? Number(autoInvestDate) : null
             }));
-
-            // --- THIS IS THE CRITICAL FIX ---
-            // Redirect to the simulation page, passing the TOTAL COST (amount + fee)
-            // that the user actually needs to pay.
             sessionStorage.setItem('paymentDetails', JSON.stringify({
-                amountToPay: tradeSummary.totalCashValue, // Pass the total cost
-                promoToApply: '' // Promo codes are not used in trading for now
+                amountToPay: tradeSummary.totalCashValue,
+                promoToApply: ''
             }));
-            // --- END OF CRITICAL FIX ---
-
             router.push(`/payment-simulation`);
             return;
         }
 
-        // --- Logic for Wallet Cash purchase or Sell (this part is correct) ---
+        // --- Logic for Wallet Cash purchase AND Sell ---
         setSubmitLoading(true);
         const token = localStorage.getItem('userToken');
-        if (!token) { /* ... */ return; }
+        if (!token) {
+            setError("Your session has expired. Please log in again.");
+            setSubmitLoading(false);
+            router.push('/');
+            return;
+        }
         const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
         const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
 
         try {
-            if (tradeType === 'buy') {
-                const buyPayload = { 
-                    amountLKR: currentAmount,
-                    paymentSource: 'wallet' 
-                };
+            let successTitle = '';
+            let successMethod = '';
+
+            if (tradeType === 'buy') { // This handles Wallet Cash purchases
+                successTitle = 'Investment Successful!';
+                successMethod = 'Wallet Cash';
+                const buyPayload = { amountLKR: currentAmount, paymentSource: 'wallet' };
                 if (autoInvest) {
                     buyPayload.saveAsAuto = true;
                     buyPayload.frequency = autoInvestFrequency;
@@ -272,10 +278,43 @@ export default function TradePage() {
                     }
                 }
                 const { data } = await axios.post(`${backendUrl}/api/investments/invest`, buyPayload, config);
-                // ... (rest of success logic)
-            } else { // sell logic
-                // ...
+                // Update user data from the response of the buy endpoint
+                if (data.updatedUserInfo) {
+                    setUserData(data.updatedUserInfo); 
+                }
+            
+            // --- THIS IS THE ADDED LOGIC FOR SELLING ---
+            } else { // This handles Sell Gold
+                successTitle = 'Sale Successful!';
+                successMethod = 'Wallet Cash';
+                const sellPayload = { amountGrams: currentAmount };
+                const { data } = await axios.post(`${backendUrl}/api/sell/gold`, sellPayload, config);
+                
+                // Update user data from the response of the sell endpoint
+                setUserData(prev => ({
+                    ...prev,
+                    cashBalanceLKR: data.newCashBalanceLKR,
+                    goldBalanceGrams: data.newGoldBalanceGrams,
+                    transactions: [...(prev.transactions || []), data.transaction]
+                }));
             }
+            // --- END OF ADDED LOGIC ---
+
+            // Show success popup for both buy and sell
+            setSuccessPopup({
+                show: true,
+                title: successTitle,
+                gold: tradeSummary.goldAmountStr,
+                total: tradeSummary.totalStr,
+                method: successMethod,
+                autoInvestDetails: autoInvestText,
+            });
+
+            // Reset form state
+            setAmount(tradeType === 'buy' ? 900 : 1);
+            setPaymentMethod('');
+            setAutoInvest(false);
+
         } catch (err) {
             setError(err.response?.data?.message || `Transaction failed.`);
         } finally {
@@ -296,7 +335,7 @@ export default function TradePage() {
         </>
     );
 
-    if (error) return (
+    if (error && !successPopup.show) return ( // Only show main error if not showing success
         <>
             <NavbarInternal />
             <div className="flex justify-center items-center min-h-[calc(100vh-120px)] p-4">

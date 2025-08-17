@@ -5,7 +5,7 @@ const { getGoldMarketSummary } = require('../utils/goldDataUtils');
 const { updateGamificationOnAction } = require('../services/gamificationTriggerService');
 const { createNotification } = require('../services/notificationService');
 const { calculateBuyFee } = require('../utils/feeUtils'); // Import the base fee calculation function
-const { mintTokens } = require('../services/blockchainService');
+const { transferToUser } = require('../services/blockchainService'); // <-- CHANGE IMPORT
 
 // Helper function for formatting currency
 const formatCurrency = (value) => {
@@ -264,14 +264,15 @@ const makeInvestment = async (req, res) => {
 
         // --- Trigger Post-Action Services (Gamification, Notifications) ---
          if (savedTransaction) {
-            // --- Blockchain Minting --- // <--- NEW SECTION
+            // --- Blockchain Transfer --- //
             try {
                 const userBlockchainAddress = updatedUser.blockchainAddress;
                 const gramsPurchased = savedTransaction.amountGrams;
         
                 if (userBlockchainAddress && gramsPurchased > 0) {
-                    console.log(`[Blockchain] Triggering mint for user ${updatedUser._id}`);
-                    const txHash = await mintTokens(userBlockchainAddress, gramsPurchased);
+                    console.log(`[Blockchain] Triggering TRANSFER for user ${updatedUser._id}`);
+                    // --- MODIFIED: Call transferToUser instead of mintTokens ---
+                    const txHash = await transferToUser(userBlockchainAddress, gramsPurchased);
                     
                     // Find the transaction again and save the hash
                     const userToUpdate = await User.findById(userId);
@@ -283,7 +284,7 @@ const makeInvestment = async (req, res) => {
                     }
                 }
             } catch (blockchainError) {
-                console.error(`[Blockchain] CRITICAL: Failed to mint tokens for transaction ${savedTransaction._id} but DB was updated. Needs manual reconciliation.`, blockchainError);
+                console.error(`[Blockchain] CRITICAL: Failed to TRANSFER tokens for transaction ${savedTransaction._id} but DB was updated. Needs manual reconciliation.`, blockchainError);
                 // In a real app, you would add this failed transaction to a retry queue.
             }
 
