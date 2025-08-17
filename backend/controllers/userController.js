@@ -6,7 +6,8 @@ const multer = require('multer'); // For error handling in upload
 const cloudinary = require('../config/cloudinary'); // For deleting old images
 const User = require('../models/User');
 // --- Import the updated gamification helpers ---
-const { getActiveChallenges, getAllBadges } = require('../config/gamification');
+const { getAllBadges } = require('../config/gamification'); // <-- Keep this for badges
+const DynamicChallenge = require('../models/DynamicChallenge'); // <-- NEW: Import DB model
 // --- Other services and utilities ---
 const { createNotification } = require('../services/notificationService');
 const { getGoldMarketSummary } = require('../utils/goldDataUtils');
@@ -31,7 +32,7 @@ const getUserProfile = async (req, res) => {
     const userId = req.user._id;
 
     try {
-        // 2. Fetch User Data (without gamification definitions)
+        // 2. Fetch User Data
         const user = await User.findById(userId)
             .populate('transactions')       // Populate for calculations & response
             .populate('automaticPayments') // Populate for response
@@ -42,13 +43,10 @@ const getUserProfile = async (req, res) => {
             return res.status(404).json({ message: 'User not found.' });
         }
 
-        console.log(`[UCP Debug getUserProfile] Fetched user ${userId} state successfully.`);
-
-        // --- V V V PROFIT CALCULATION (Keep this logic) V V V ---
+        // --- Profit calculation logic remains the same ---
         let totalInvestedLKR = 0;
         let totalGramsPurchased = 0;
 
-        // Iterate through user's actual transactions array (populated)
         (user.transactions || []).forEach(tx => {
             if (tx && tx.type === 'investment' && tx.status === 'completed') {
                 totalInvestedLKR += tx.amountLKR || 0;
@@ -60,11 +58,9 @@ const getUserProfile = async (req, res) => {
             ? (totalInvestedLKR / totalGramsPurchased)
             : 0;
 
-        // Get current market price
         const marketSummary = getGoldMarketSummary();
         const currentPricePerGram = marketSummary?.latestPricePerGram || 0;
 
-        // Calculate current value and profit
         const currentValueLKR = user.goldBalanceGrams * currentPricePerGram;
         let overallProfitLKR = 0;
         let overallProfitPercent = 0;
@@ -76,24 +72,23 @@ const getUserProfile = async (req, res) => {
                 overallProfitPercent = (overallProfitLKR / costBasisOfCurrentHoldings) * 100;
             }
         }
-        // --- ^ ^ ^ END PROFIT CALCULATION ^ ^ ^ ---
+        // --- End Profit Calculation ---
 
-        // 3. Get ACTIVE Gamification Definitions from Config Helpers
-        const activeBadgesDefs = getAllBadges(); // Get all badges defined in config
-        const activeChallengesDefs = getActiveChallenges(); // Get only active challenges from config
+        // --- MODIFIED: Get challenges and badges ---
+        const activeBadgesDefs = getAllBadges(); // Badges are still static from config
 
-        // Log warnings if definitions couldn't be fetched (unlikely with config, but good practice)
-        if (!activeBadgesDefs) console.warn("[UCP getUserProfile] Failed to get badge definitions from config.");
-        if (!activeChallengesDefs) console.warn("[UCP getUserProfile] Failed to get challenge definitions from config.");
+        // Fetch DYNAMIC challenges from the database
+        const activeChallengesDefs = await DynamicChallenge.find({
+            isActive: true,
+            endDate: { $gte: new Date() } // Only show challenges that haven't expired
+        }).lean();
+        // --- END MODIFIED ---
 
-        // 4. Prepare Response Data
         const sortedTransactions = (user.transactions || [])
-            ?.filter(tx => tx && tx.date) // Ensure transaction and date exist
+            ?.filter(tx => tx && tx.date)
             ?.sort((a, b) => new Date(b.date) - new Date(a.date)) || [];
 
-        console.log(`[UCP Debug getUserProfile] Responding for user ${user._id}. AvgPrice=${averagePurchasePricePerGram.toFixed(2)}, CurrentValue=${currentValueLKR.toFixed(2)}, Profit=${overallProfitLKR.toFixed(2)}`);
-
-        // 5. Send Response with user state, calculated values, AND config-based definitions
+        // 5. Send Response
         res.json({
              // Basic Info
              _id: user._id,
@@ -124,15 +119,15 @@ const getUserProfile = async (req, res) => {
              completedChallengeIds: user.completedChallengeIds || [],
              starCount: user.starCount || 0,
 
-             // Gamification Definitions (from config)
+             // Gamification Definitions (now a mix of static and dynamic)
              gamificationDefs: {
-                 badges: activeBadgesDefs || [],      // Use definitions from config helper
-                 challenges: activeChallengesDefs || [] // Use definitions from config helper
+                 badges: activeBadgesDefs || [],
+                 challenges: activeChallengesDefs || [] // <-- This now comes from the DB
              }
          });
 
     } catch (error) {
-        // Catch unexpected errors during the fetch/preparation process
+        // Catch unexpected errors
         sendErrorResponse(res, 500, `Unexpected server error getting user profile for ${userId}.`, error);
     }
 };

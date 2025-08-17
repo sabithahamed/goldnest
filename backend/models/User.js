@@ -111,6 +111,11 @@ const userSchema = new mongoose.Schema({
   goldBalanceGrams: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative gold
   cashBalanceLKR: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative cash
 
+    isLocked: {
+    type: Boolean,
+    default: false // Users are not locked by default
+  },
+  
   transactions: [transactionSchema], // Array of transactions
 
   defaultShippingAddress: shippingAddressSchema, // Store user's preferred default shipping address

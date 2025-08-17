@@ -20,11 +20,15 @@ const gamificationRoutes = require('./routes/gamificationRoutes');
 const marketRoutes = require('./routes/marketRoutes');
 const walletRoutes = require('./routes/walletRoutes');     // Import wallet routes
 const sellRoutes = require('./routes/sellRoutes');         // Import sell routes
-// const redeemRoutes = require('./routes/redeemRoutes');     // REMOVED old redeem routes import
 const redemptionRoutes = require('./routes/redemptionRoutes'); // ADDED: Import redemption routes
 const notificationRoutes = require('./routes/notificationRoutes'); // Import notification routes
 const userPreferenceRoutes = require('./routes/userPreferenceRoutes'); // Import user preference routes
 const priceAlertRoutes = require('./routes/priceAlertRoutes'); // Import price alert routes
+const adminAuthRoutes = require('./routes/adminAuthRoutes'); // <-- ADD THIS
+const adminRoutes = require('./routes/adminRoutes'); // <-- ADD THIS
+const adminSettingsRoutes = require('./routes/adminSettingsRoutes'); // <-- ADD
+const adminGamificationRoutes = require('./routes/adminGamificationRoutes'); // <-- ADD
+const adminPromoRoutes = require('./routes/adminPromoRoutes'); // <-- ADD
 
 // Connect to Database
 connectDB();
@@ -54,6 +58,11 @@ app.use('/api/sell', sellRoutes);             // Mount sell routes
 // app.use('/api/redeem', redeemRoutes);         // REMOVED old redeem routes mount
 app.use('/api/redemptions', redemptionRoutes);  // ADDED: Mount redemption routes
 app.use('/api/notifications', notificationRoutes); // Mount notification routes
+app.use('/api/admin/auth', adminAuthRoutes); // <-- ADD THIS
+app.use('/api/admin', adminRoutes); // <-- ADD THIS
+app.use('/api/admin/settings', adminSettingsRoutes); // <-- ADD
+app.use('/api/admin/gamification', adminGamificationRoutes); // <-- ADD
+app.use('/api/admin/promos', adminPromoRoutes); // <-- ADD
 
 // Basic test route
 app.get('/', (req, res) => {

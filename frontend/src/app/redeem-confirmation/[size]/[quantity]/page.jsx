@@ -178,18 +178,29 @@ function RedeemConfirmationContent() {
         try {
             const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
-            const payload = {
-                itemSize: itemSize,
-                quantity: quantity,
-                shippingDetails: shippingDetails,
-                saveAddressAsDefault: saveAddress
-            };
+            
+            // --- START OF FIX ---
+            // Create a description for the backend
+            const description = `${quantity} x ${itemSize} ${gramsForItem > 10 ? 'Bar' : 'Coin'}`;
 
-            const { data } = await axios.post(`${backendUrl}/api/redeem`, payload, config);
+            const payload = {
+                // itemSize is not needed by the backend, but these are:
+                itemDescription: description,    // <-- ADD THIS
+                quantity: quantity,              // Already correct
+                totalGrams: gramsRequired,       // <-- ADD THIS
+                shippingDetails: shippingDetails,  // Already correct
+                saveAddressAsDefault: saveAddress  // Already correct
+            };
+            // --- END OF FIX ---
+
+            const { data } = await axios.post(
+                `${backendUrl}/api/redemptions/request`,
+                payload,
+                config
+            );
 
             // --- BACKEND SUCCESS ---
             // Get estimated delivery date from the response transaction
-            // ** Adjust 'data.transaction?.estimatedDeliveryDate' if your backend structure differs **
             const estimatedDate = data.transaction?.estimatedDeliveryDate;
             setFinalDeliveryDate(estimatedDate); // Store for success message
 
@@ -211,7 +222,6 @@ function RedeemConfirmationContent() {
             setShowProcessingPopup(false); // Hide processing popup on error
             setSubmitLoading(false); // Stop loading on error
         }
-        // REMOVED finally block - loading state is handled inside timeout/catch
     };
 
     const closeSuccessPopup = () => {
@@ -261,11 +271,6 @@ function RedeemConfirmationContent() {
                             <h4 className="text-xl font-semibold mb-3">Success!</h4>
                              {/* Display the dynamic success message state */}
                              <p className="text-gray-700 mb-6">{successMessage}</p>
-                             {/* Optionally display date separately if preferred
-                             {finalDeliveryDate && (
-                                 <p className="text-sm text-gray-500 mb-6">Estimated Delivery: {formatDate(finalDeliveryDate)}</p>
-                             )}
-                             */}
                             <button onClick={closeSuccessPopup} className="btn btn-primary w-full">
                                 Go to Wallet
                             </button>

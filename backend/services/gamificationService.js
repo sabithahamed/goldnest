@@ -1,5 +1,6 @@
 // backend/services/gamificationService.js
-const { getActiveChallenges, getAllBadges } = require('../config/gamification'); // Use updated helpers from config
+const { getAllBadges } = require('../config/gamification');
+const DynamicChallenge = require('../models/DynamicChallenge'); // <-- NEW: Import the DB model
 
 /**
  * Helper function to get the start of the current month or week.
@@ -22,7 +23,7 @@ const getStartOf = (period) => {
 
 
 /**
- * Calculates potential gamification changes based on user state using definitions from config.
+ * Calculates potential gamification changes based on user state using definitions from config and database.
  * Returns only the *deltas*: newly earned badge IDs, newly completed challenge IDs,
  * stars to potentially add, and the full calculated progress map *if* it differs.
  * Does NOT perform database fetches/saves or send notifications. Relies on config helpers.
@@ -34,12 +35,20 @@ const getStartOf = (period) => {
  *   - `starsToAdd` (number): Total stars calculated from newly earned items (badges + challenges).
  *   - `updatedProgressMap` (Map<string, number> | null): The calculated challenge progress map, ONLY if it differs from the user's existing progress; otherwise null.
  */
-const processGamificationState = (user) => { // No longer needs definitions passed in
+const processGamificationState = async (user) => { // <-- CHANGED to async
     // Initial checks for valid user input
     if (!user || !user._id) {
         console.warn("[GS] processGamificationState called with invalid or missing user object.");
         return { newBadgeIds: [], newCompletedChallengeIds: [], starsToAdd: 0, updatedProgressMap: null };
     }
+
+    // --- NEW: Fetch active challenges directly from the database ---
+    const activeChallenges = await DynamicChallenge.find({
+        isActive: true,
+        startDate: { $lte: new Date() }, // Challenge has started
+        endDate: { $gte: new Date() }   // Challenge has not ended
+    }).lean(); // .lean() for performance
+    // --- END NEW ---
 
     // Use provided user state, ensuring defaults for missing properties
     const transactions = user.transactions || [];
@@ -66,7 +75,8 @@ const processGamificationState = (user) => { // No longer needs definitions pass
     // Map to store aggregates for specific period-based challenges (e.g., INVEST_LKR_PERIOD)
     // Key: challengeId, Value: number (aggregated amount/count)
     const periodAggregates = new Map();
-    const activePeriodChallenges = getActiveChallenges().filter(c => c.type === 'INVEST_LKR_PERIOD'); // Pre-filter for efficiency
+    // We only need to pre-filter for INVEST_LKR_PERIOD from our dynamic challenges
+    const activePeriodChallenges = activeChallenges.filter(c => c.type === 'INVEST_LKR_PERIOD');
 
     transactions.forEach(tx => {
         // Basic validation for transaction object and essential fields
@@ -99,12 +109,13 @@ const processGamificationState = (user) => { // No longer needs definitions pass
 
                     // Check if transaction date falls within the challenge's specific period
                     if ((!challengeStart || txDate >= challengeStart) && (!challengeEnd || txDate <= challengeEnd)) {
-                         const currentPeriodTotal = (periodAggregates.get(challenge.id) || 0) + amountLKR;
-                         periodAggregates.set(challenge.id, currentPeriodTotal);
-                         // console.log(`[GS Debug] User ${user._id} Tx ${tx._id} added ${amountLKR} to period challenge ${challenge.id}. New total: ${currentPeriodTotal}`);
+                         // Use challenge._id for dynamic challenges
+                         const currentPeriodTotal = (periodAggregates.get(challenge._id.toString()) || 0) + amountLKR;
+                         periodAggregates.set(challenge._id.toString(), currentPeriodTotal);
+                         // console.log(`[GS Debug] User ${user._id} Tx ${tx._id} added ${amountLKR} to period challenge ${challenge._id}. New total: ${currentPeriodTotal}`);
                     }
                 } catch(e) {
-                    console.error(`[GS Error] User ${user._id}: Error processing period challenge ${challenge.id} dates:`, e);
+                    console.error(`[GS Error] User ${user._id}: Error processing period challenge ${challenge._id} dates:`, e);
                 }
             });
             // --- End Period Aggregation ---
@@ -161,11 +172,12 @@ const processGamificationState = (user) => { // No longer needs definitions pass
         }
     });
 
-    // --- Calculate Challenge Progress & Check for NEW Completions (using filtered active challenges from config) ---
-    const activeChallenges = getActiveChallenges(); // Gets only active/current challenges based on config
+    // --- Calculate Challenge Progress & Check for NEW Completions (using challenges fetched from DB) ---
+    // activeChallenges is already fetched from the DB at the top of the function
     activeChallenges.forEach(challenge => {
-         if (!challenge || !challenge.id || !challenge.type || typeof challenge.goal === 'undefined') {
-             console.warn(`[GS] Skipping invalid challenge definition from config:`, challenge);
+         // Use challenge._id for dynamic challenges
+         if (!challenge || !challenge._id || !challenge.type || typeof challenge.goal === 'undefined') {
+             console.warn(`[GS] Skipping invalid dynamic challenge definition from DB:`, challenge);
              return;
         }
 
@@ -187,42 +199,40 @@ const processGamificationState = (user) => { // No longer needs definitions pass
                     progressCalculated = true;
                     break;
                 case 'INVEST_LKR_PERIOD': // Use the pre-calculated period aggregate
-                     currentProgress = periodAggregates.get(challenge.id) || 0;
+                     // Use challenge._id for dynamic challenges
+                     currentProgress = periodAggregates.get(challenge._id.toString()) || 0;
                      progressCalculated = true;
                      break;
                 // Add other challenge types here
-                // Example: case 'TRANSACTION_COUNT': (if a challenge used this type)
-                //    currentProgress = investmentCount + sellCount; // Or specific types based on challenge definition
-                //    progressCalculated = true;
-                //    break;
             }
          } catch (err) {
-            console.error(`[GS Error] User ${user._id}: Calculating progress for challenge ${challenge.id} failed:`, err);
+            console.error(`[GS Error] User ${user._id}: Calculating progress for challenge ${challenge._id} failed:`, err);
          }
 
         if (progressCalculated) {
+            const challengeIdStr = challenge._id.toString(); // Convert ObjectId to string for map keys and Set lookups
              // Always store the calculated progress for active challenges in the current map
-            currentProgressMap.set(challenge.id, currentProgress);
+            currentProgressMap.set(challengeIdStr, currentProgress);
 
             // Check if the user has NOT already completed this challenge
             // NOTE: This assumes challenges aren't *repeatable* once completed within their cycle.
             // More complex logic needed for repeatable challenges (e.g., check completion timestamp vs. cycle start).
             // Also check if reward has been claimed, as claiming marks completion effectively
-            const isAlreadyCompleted = existingCompletedChallenges.has(challenge.id) || existingProgress.get(`${challenge.id}_claimed`) === true;
+            const isAlreadyCompleted = existingCompletedChallenges.has(challengeIdStr) || existingProgress.get(`${challengeIdStr}_claimed`) === true;
 
             if (!isAlreadyCompleted) {
                  // Check if the calculated progress meets or exceeds the challenge goal
                  if (currentProgress >= challenge.goal) {
-                     newCompletedChallengeIds.push(challenge.id);
+                     newCompletedChallengeIds.push(challengeIdStr);
                      // Award stars immediately upon completion detection (claim handles other rewards)
-                     starsToAdd += challenge.starsAwarded || 0;
-                     console.log(`[GS Debug] User ${user._id} -> NEWLY completed challenge ID: ${challenge.id} (Progress: ${currentProgress}/${challenge.goal})`);
+                     starsToAdd += challenge.rewardValue || 0; // Use rewardValue for dynamic challenges' stars
+                     console.log(`[GS Debug] User ${user._id} -> NEWLY completed DYNAMIC challenge ID: ${challengeIdStr} (Progress: ${currentProgress}/${challenge.goal})`);
                      // Note: We don't grant non-star rewards here, that happens on claim.
                      // We also don't mark as completed here, that happens in the trigger service after save.
                  }
             } else {
                 // Optional: Log if challenge was already completed or claimed
-                // console.log(`[GS Debug] User ${user._id} -> Challenge ${challenge.id} already completed or claimed.`);
+                // console.log(`[GS Debug] User ${user._id} -> Challenge ${challengeIdStr} already completed or claimed.`);
             }
         }
     });
