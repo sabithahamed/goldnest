@@ -6,15 +6,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { useModal } from '@/contexts/ModalContext';
+import { useModal } from '@/contexts/ModalContext'; // This import is crucial
 
 // Assume icons are in public
 const logoSrc = "/GoldNest.png";
-const googleIconSrc = "/google-icon.png"; // Ensure these exist
-const appleIconSrc = "/apple-icon.png";   // Ensure these exist
+const googleIconSrc = "/google-icon.png";
+const appleIconSrc = "/apple-icon.png";
 
 export default function LoginModal() {
-    const { isLoginModalOpen, closeLoginModal } = useModal();
+    // Added openGenericModal to the destructuring
+    const { isLoginModalOpen, closeLoginModal, openGenericModal } = useModal(); 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -48,26 +49,45 @@ export default function LoginModal() {
             // --- Check for specific 403 Forbidden (Email Not Verified) ---
             if (err.response && err.response.status === 403 && err.response.data?.verificationNeeded) {
                 const userId = err.response.data.userId; // Get userId from error response
-                setError(`Email not verified. Please check your email for an OTP or resend.`);
-                // Option 1: Just show error in modal
-                // Option 2: Automatically redirect to verify page
+                
+                // Using openGenericModal to show the error
+                openGenericModal(
+                    'Verification Required',
+                    'Your email is not verified. Please check your email for an OTP or resend.',
+                    'error'
+                );
+
                 if (userId) {
                     closeLoginModal(); // Close modal before redirecting
                     router.push(`/verify-email?userId=${userId}&email=${encodeURIComponent(email)}`);
-                } else {
-                    // Fallback if userId wasn't returned in error
-                    setError('Email not verified. Please check your email or try signing up again.');
                 }
+
             } else {
-                // --- Handle other errors (e.g., 401 Invalid Credentials) ---
-                setError(err.response?.data?.message || 'Login failed. Check credentials.');
+                // Using openGenericModal for other errors
+                openGenericModal(
+                    'Login Failed',
+                    err.response?.data?.message || 'Login failed. Check credentials.',
+                    'error'
+                );
             }
         }
     };
 
-    // Placeholder Social Logins
-    const handleGoogleSignIn = () => alert("Google Sign-In not implemented yet.");
-    const handleAppleSignIn = () => alert("Apple Sign-In not implemented yet.");
+    // REPLACED ALERTS
+    const handleGoogleSignIn = () => {
+        openGenericModal(
+            'Feature Not Available',
+            'Google Sign-In not implemented yet.',
+            'info'
+        );
+    };
+    const handleAppleSignIn = () => {
+        openGenericModal(
+            'Feature Not Available',
+            'Apple Sign-In not implemented yet.',
+            'info'
+        );
+    };
 
     if (!isLoginModalOpen) {
         return null;
@@ -77,20 +97,21 @@ export default function LoginModal() {
         // Use classes from styles.css for overlay and modal
         <div id="login-modal" className="modal-overlay">
             <div className="modal">
-                <button className="close-btn" onClick={closeLoginModal}>×</button> {/* Close button */}
+                <button className="close-btn" onClick={closeLoginModal}>×</button>
                 <div className="logo">
                     <Image src={logoSrc} alt="GoldNest Logo" width={120} height={35} />
                 </div>
                 <h2>Welcome to GoldNest</h2>
-                {error && <p id="login-error" className="error">{error}</p>} {/* Display errors */}
+                {/* Removed the local error display, as the modal will now handle it */}
+                {/* {error && <p id="login-error" className="error">{error}</p>} */}
 
                 <form id="login-form" className="form" onSubmit={handleLogin}>
                     <label htmlFor="email-or-phone">Email or Phone number</label>
                     <input
-                        type="email" // Changed to email for consistency with backend
+                        type="email"
                         id="email-or-phone"
                         name="emailOrPhone"
-                        placeholder="Email" // Changed placeholder
+                        placeholder="Email"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -119,12 +140,10 @@ export default function LoginModal() {
                 </button>
 
                 <p className="switch-auth">
-                    {/* Still link to forgot-password page */}
                     <Link href="/forgot-password" onClick={closeLoginModal}>Forgot password?</Link>
                 </p>
                 <p className="switch-auth">
                     Don’t have an account?{' '}
-                    {/* Link to signup page */}
                     <Link href="/signup" onClick={closeLoginModal}>Sign up</Link>
                 </p>
             </div>
