@@ -1,5 +1,5 @@
 // src/app/admin/redemptions/page.jsx
-'use client'; // This directive applies to all components in this file
+'use client';
 
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import axios from 'axios';
@@ -14,8 +14,7 @@ const formatDate = (dateString) => {
 };
 
 const ManageRedemptionModal = ({ redemption, onClose, onUpdate }) => {
-    // ... (The code for the Modal component remains exactly the same as before)
-     const [status, setStatus] = useState(redemption.status);
+    const [status, setStatus] = useState(redemption.status);
     const [trackingNumber, setTrackingNumber] = useState(redemption.trackingNumber || '');
     const [isSaving, setIsSaving] = useState(false);
 
@@ -67,7 +66,7 @@ const ManageRedemptionModal = ({ redemption, onClose, onUpdate }) => {
     );
 };
 
-// This is the client component that uses the hook
+// This is the client component that uses the hook and contains all logic
 function RedemptionManagementClient() {
     const [redemptions, setRedemptions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -80,7 +79,7 @@ function RedemptionManagementClient() {
     const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
 
     const fetchRedemptions = useCallback(async () => {
-        setLoading(true);
+        // We don't need to setLoading(true) here on every refetch, only initial
         const adminInfo = JSON.parse(localStorage.getItem('adminInfo'));
         const token = adminInfo?.token;
         if (!token) { router.push('/gn-admin-portal'); return; }
@@ -98,11 +97,21 @@ function RedemptionManagementClient() {
     }, [page, statusFilter, router]);
 
     useEffect(() => {
+        setLoading(true);
         fetchRedemptions();
     }, [fetchRedemptions]);
 
     const handleUpdateRedemption = async (id, updates) => {
-        // ... (This function remains the same)
+        try {
+            const adminInfo = JSON.parse(localStorage.getItem('adminInfo'));
+            const token = adminInfo?.token;
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+            await axios.put(`${backendUrl}/api/admin/redemptions/${id}`, updates, config);
+            fetchRedemptions(); // Simply refetch the data to get the latest state
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to update redemption.');
+        }
     };
 
     const handleFilterChange = (e) => {
@@ -115,6 +124,10 @@ function RedemptionManagementClient() {
         const statusClass = status ? status.toLowerCase() : 'default';
         return styles[`status${statusClass.charAt(0).toUpperCase() + statusClass.slice(1)}`] || '';
     };
+
+    if (loading) {
+        return <div className={styles.pageWrapper}><h1 className={styles.header}>Loading Redemptions...</h1></div>;
+    }
 
     return (
         <>
@@ -138,9 +151,7 @@ function RedemptionManagementClient() {
                             <tr><th>Date</th><th>User</th><th>Item</th><th>Total Grams</th><th>Status</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
-                            {loading ? (
-                                <tr><td colSpan="6" className={styles.emptyMessage}>Loading redemptions...</td></tr>
-                            ) : redemptions.length > 0 ? (
+                            {redemptions.length > 0 ? (
                                 redemptions.map(r => (
                                     <tr key={r._id}>
                                         <td>{formatDate(r.createdAt)}</td>
@@ -170,11 +181,9 @@ function RedemptionManagementClient() {
     );
 }
 
-// This is the main exported page component
+// This is the main exported page component that handles the Suspense boundary
 export default function RedemptionManagementPage() {
     return (
-        // This Suspense boundary is the key to fixing the build error.
-        // It tells Next.js to show a fallback while the client component loads and reads the URL parameters.
         <Suspense fallback={<div className="p-6">Loading Redemption Page...</div>}>
             <RedemptionManagementClient />
         </Suspense>
