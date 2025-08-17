@@ -961,6 +961,172 @@ body {
   margin: 0 0 12px;
 }
 
+/* In frontend/src/app/globals.css */
+
+/* --- NEW: Notifications Page UI --- */
+
+/* Header */
+.notificationHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #eee;
+}
+.headerContent {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.headerIcon {
+  font-size: 1.5rem;
+  color: #F8B612;
+}
+.headerTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+.markAllReadButton {
+  background: none;
+  border: none;
+  color: #007bff;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.markAllReadButton:hover {
+  color: #0056b3;
+}
+
+/* Filter Controls */
+.filterControls {
+  margin-bottom: 1rem;
+}
+.filterLabel {
+  margin-right: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #555;
+}
+.filterSelect {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: #fff;
+}
+
+/* Main Notification List */
+.notificationListPage {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* Individual Notification Item */
+.notificationItemPage {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background-color: #fff;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+.notificationItemPage.unread {
+  background-color: #fffbef; /* Light yellow for unread */
+  border-left: 4px solid #F8B612;
+}
+.notificationItemPage:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.notificationIcon {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.notificationContent {
+  flex-grow: 1;
+}
+.notificationTitle {
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  font-size: 0.95rem;
+}
+.notificationMessage {
+  font-size: 0.85rem;
+  color: #666;
+  margin: 0.25rem 0 0 0;
+}
+.notificationTime {
+  font-size: 0.75rem;
+  color: #999;
+  margin-top: 0.25rem;
+}
+
+.notificationActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto; /* Pushes actions to the right */
+}
+.unreadDot {
+  width: 8px;
+  height: 8px;
+  background-color: #007bff; /* Blue dot for unread */
+  border-radius: 50%;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #999;
+}
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+.emptyTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #555;
+}
+.emptyText {
+  font-size: 0.9rem;
+}
+
+/* Skeleton Loader */
+.skeletonItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+.notificationIconSkeleton {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e2e8f0;
+}
+
 .notification-list {
   display: flex;
   flex-direction: column;
@@ -1145,7 +1311,6 @@ body {
 
 .divider {
   width: 1px;
-  background-color: #eee;
   align-self: stretch;
 }
 
@@ -1304,39 +1469,45 @@ body {
       justify-content: center;
   }
 }
-
-/* Redeem History Specific Styles */
+/* --- Redeem/Transaction History Controls (NEW & CORRECTED) --- */
 .redeem-history .table-controls {
-  margin-bottom: 12px;
   display: flex;
-  justify-content: flex-start;
+  align-items: center; /* Vertically aligns the labels and inputs */
+  gap: 24px; /* Space between the filter and search groups */
+  margin-bottom: 20px;
+  flex-wrap: wrap; /* Allows controls to stack on small screens */
 }
-
+        
 .redeem-history .form-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 8px; /* Space between label and input */
 }
-
+        
 .redeem-history .form-group label {
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.redeem-history .form-group select {
-  padding: 6px;
-  border: 1px solid #ddd;
-  border-radius: 5px;
   font-size: 0.9rem;
-  color: #333;
-  background-color: #fff;
-  transition: border-color 0.3s ease;
+  color: #555;
+  font-weight: 500;
+  white-space: nowrap; /* Prevents the label from breaking into two lines */
 }
-
-.redeem-history .form-group select:focus {
+        
+.redeem-history .form-group select,
+.redeem-history .form-group input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+        
+.redeem-history .form-group select:focus,
+.redeem-history .form-group input:focus {
   outline: none;
   border-color: #F8B612;
+  box-shadow: 0 0 0 2px rgba(248, 182, 18, 0.2);
 }
+
 
 .redeem-history th:nth-child(1) { width: 20%; }
 .redeem-history th:nth-child(2) { width: 15%; }
@@ -2501,4 +2672,28 @@ body {
 .form-group select:focus {
   outline: none;
   border-color: #F8B612;
+}
+
+.link-btn {
+  color: #2563eb !important;
+  font-weight: bold;
+  background: none !important;
+  border: none !important;
+  cursor: pointer;
+  padding: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  transition: color 0.2s;
+}
+.link-btn:hover {
+  color: #1e40af !important;
+  text-decoration: underline;
+}
+
+.center-divider {
+  text-align: center;
+  width: 100%;
+  margin: 16px 0;
+  color: #888;
+  font-weight: 500;
 }

@@ -1,36 +1,40 @@
 /* src/app/withdraw/Withdraw.module.css */
 
 .pageWrapper {
-    background-color: #f8fafc; /* slate-50 */
+    background-color: #f8fafc;
     padding: 2rem 1rem;
-    /* min-height is now handled by the main tag in globals.css */
     display: flex;
     justify-content: center;
-    align-items: flex-start; /* Align to top, not center */
+    align-items: center; /* Vertically center the card on the page */
+    /* REMOVED: The min-height was conflicting with the sticky footer layout. */
+    /* The main tag in globals.css with flex-grow: 1 now handles this correctly. */
 }
 
 .card {
     background-color: #ffffff;
-    padding: 2.5rem;
-    border-radius: 1rem; /* 16px */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    /* CORRECTED: Reduced padding for better internal spacing */
+    padding: 2rem; 
+    border-radius: 1rem;
+    box-shadow: 0 4px
+ 12px rgba(0, 0, 0, 0.05);
     width: 100%;
-    max-width: 550px;
+    max-width: 500px; /* Slightly reduced max-width */
     border: 1px solid #e2e8f0;
 }
 
 .header {
-    font-size: 1.5rem;
+    /* CORRECTED: Reduced font size and margin */
+    font-size: 1.25rem; 
     font-weight: 700;
     color: #1e293b;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     text-align: center;
 }
 
 .balanceDisplay {
-    background-color: #f1f5f9; /* slate-100 */
+    background-color: #f1f5f9;
     border: 1px solid #e2e8f0;
-    border-radius: 0.75rem; /* 12px */
+    border-radius: 0.75rem;
     padding: 1rem 1.5rem;
     margin-bottom: 1.5rem;
     text-align: center;
@@ -43,14 +47,15 @@
 }
 
 .balanceValue {
-    font-size: 1.875rem; /* text-3xl */
+    /* CORRECTED: Reduced font size */
+    font-size: 1.5rem; 
     font-weight: 700;
-    color: #16a34a; /* green */
+    color: #16a34a;
     margin-top: 0.25rem;
 }
 
 .formGroup {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem; /* Slightly reduced margin */
 }
 
 .formLabel {
@@ -65,10 +70,11 @@
     width: 100%;
     padding: 0.75rem 1rem;
     border: 1px solid #cbd5e1;
-    border-radius: 0.5rem; /* 8px */
-    font-size: 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem; /* Slightly smaller font for inputs */
     transition: border-color 0.2s, box-shadow 0.2s;
 }
+
 .formInput:focus, .formSelect:focus {
     outline: none;
     border-color: #F8B612;
@@ -78,7 +84,7 @@
 .bankDetailsSection {
     border: 1px solid #e2e8f0;
     border-radius: 0.75rem;
-    padding: 1.5rem;
+    padding: 1.25rem;
     margin-top: 0.5rem;
     display: flex;
     flex-direction: column;
@@ -93,8 +99,8 @@
 
 .summary {
     border-top: 1px solid #e2e8f0;
-    padding-top: 1.5rem;
-    margin-top: 1.5rem;
+    padding-top: 1.25rem;
+    margin-top: 1.25rem;
     font-size: 0.875rem;
     display: flex;
     flex-direction: column;
@@ -105,7 +111,7 @@
 .summaryValue { font-weight: 500; color: #334155; }
 .summaryTotal { font-weight: 700; font-size: 1rem; color: #0f172a; border-top: 1px solid #e2e8f0; padding-top: 0.75rem; margin-top: 0.25rem; }
 
-.actions { margin-top: 2rem; display: flex; gap: 1rem; }
+.actions { margin-top: 1.5rem; display: flex; gap: 1rem; }
 .actions button, .actions a {
     flex-grow: 1;
     padding: 0.75rem;
@@ -121,3 +127,26 @@
 .primaryButton:disabled { background-color: #fcd34d; opacity: 0.7; cursor: not-allowed; }
 .secondaryButton { background-color: #ffffff; color: #475569; border: 1px solid #cbd5e1; }
 .secondaryButton:hover { border-color: #94a3b8; background-color: #f8fafc; }
+
+/* --- RESPONSIVE FIXES --- */
+@media (max-width: 480px) {
+    .pageWrapper {
+        padding: 1rem 0.75rem; /* Less padding on mobile */
+        align-items: flex-start; /* Align card to the top on mobile */
+    }
+    .card {
+        padding: 1.5rem; /* Reduce card padding for more space */
+    }
+    .header {
+        font-size: 1.2rem;
+    }
+    .balanceValue {
+        font-size: 1.25rem;
+    }
+    .bankDetailsSection {
+        padding: 1rem;
+    }
+    .actions {
+        flex-direction: column; /* Stack buttons vertically on small screens */
+    }
+}
