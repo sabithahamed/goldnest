@@ -19,7 +19,7 @@ const PasswordConfirmModal = ({ onConfirm, onCancel, isConfirming }) => {
           <label htmlFor="confirmationPassword" className={styles.formLabel}>Your Password</label>
           <input
             type="password"
-            id="confirmationPassword"
+            id="confirmationPassword" 
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className={styles.formInput}
