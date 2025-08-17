@@ -2,7 +2,8 @@
 const User = require('../models/User');
 const Redemption = require('../models/Redemption');
 const mongoose = require('mongoose'); // Keep mongoose if it's used elsewhere or for consistency, though not strictly needed by the new function directly.
-const { createNotification } = require('../services/notificationService'); // <-- ADD THIS IMPORT
+const { createNotification } = require('../services/notificationService');
+const { logAdminAction } = require('../services/auditLogService'); // <-- ADD THIS IMPORT
 
 // @desc    Get dashboard statistics
 // @route   GET /api/admin/stats/dashboard
@@ -138,6 +139,9 @@ const updateUserStatus = async (req, res) => {
 
         user.isLocked = isLocked;
         const updatedUser = await user.save();
+        
+        // Log the admin action
+        await logAdminAction(req.admin, `Set user lock status to ${isLocked}`, { type: 'User', id: user._id });
 
         res.json({
             _id: updatedUser._id,
@@ -204,6 +208,9 @@ const updateRedemptionStatus = async (req, res) => {
         if (status) redemption.status = status;
         if (trackingNumber) redemption.trackingNumber = trackingNumber;
         const updatedRedemption = await redemption.save();
+        
+        // Log the admin action
+        await logAdminAction(req.admin, `Updated redemption status to '${status}'`, { type: 'Redemption', id: redemption._id }, { trackingNumber });
         
         // 2. --- NEW LOGIC: Update the corresponding transaction in the User document ---
         if (status && status !== originalStatus) {
@@ -352,5 +359,5 @@ module.exports = {
     updateRedemptionStatus,
     getRecentTransactions,
     getUserSignupChartData,
-    getTransactionTypeChartData // <-- EXPORT THE NEW FUNCTION
+    getTransactionTypeChartData
 };

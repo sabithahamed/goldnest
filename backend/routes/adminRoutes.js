@@ -13,6 +13,7 @@ const {
     getTransactionTypeChartData // <-- IMPORT
 } = require('../controllers/adminController');
 const { protectAdmin } = require('../middleware/adminAuthMiddleware');
+const { confirmPassword } = require('../middleware/adminAuthMiddleware'); // <-- IMPORT IT
 
 router.use(protectAdmin);
 
@@ -30,5 +31,6 @@ router.put('/users/:id/status', updateUserStatus);
 // Redemption Management Routes
 router.get('/redemptions', getAllRedemptions);
 router.put('/redemptions/:id', updateRedemptionStatus);
+router.put('/users/:id/status', confirmPassword, updateUserStatus); // <-- ADD MIDDLEWARE
 
 module.exports = router;

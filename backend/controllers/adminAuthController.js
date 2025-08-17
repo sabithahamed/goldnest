@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 
 const generateAdminToken = (id, role) => {
   return jwt.sign({ id, role, isAdmin: true }, process.env.ADMIN_JWT_SECRET, {
-    expiresIn: '8h', // Shorter, more secure session length for admins
+    expiresIn: '8h',
   });
 };
 
@@ -19,12 +19,13 @@ const loginAdmin = async (req, res) => {
   }
 
   try {
-    // Find admin and explicitly include the password field for comparison
+    // --- THIS IS THE FIX ---
+    // We must explicitly ask for the password field because of `select: false` in the schema.
     const admin = await Admin.findOne({ email }).select('+password');
+    // --- END OF FIX ---
 
     if (!admin || !admin.isActive) {
-      // Generic error to prevent revealing which accounts exist or are disabled
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials or account disabled.' });
     }
 
     const isMatch = await admin.matchPassword(password);
@@ -33,8 +34,9 @@ const loginAdmin = async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update last login timestamp for auditing purposes
     admin.lastLogin = new Date();
+    // We are not modifying the password here, so we can skip validation
+    // to avoid potential issues if other fields were changed.
     await admin.save({ validateBeforeSave: false });
 
     res.json({

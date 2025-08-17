@@ -1,18 +1,25 @@
 // src/app/admin/layout.jsx
 'use client';
-import React, { useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation'; // <-- Import usePathname
+import React, { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import styles from './AdminLayout.module.css'; // <-- IMPORT THE CSS MODULE
+import styles from './AdminLayout.module.css';
 
 const AdminLayout = ({ children }) => {
   const router = useRouter();
-  const pathname = usePathname(); // <-- Get current path
+  const pathname = usePathname();
+  const [adminRole, setAdminRole] = useState('');
 
   useEffect(() => {
-    const adminInfo = localStorage.getItem('adminInfo');
-    if (!adminInfo) {
+    // Check for admin info in local storage
+    const adminInfoString = localStorage.getItem('adminInfo');
+    if (!adminInfoString) {
+      // If no admin info, redirect to the login portal
       router.push('/gn-admin-portal');
+    } else {
+      // If admin info exists, parse it and set the role
+      const adminInfo = JSON.parse(adminInfoString);
+      setAdminRole(adminInfo.role);
     }
   }, [router]);
 
@@ -24,7 +31,7 @@ const AdminLayout = ({ children }) => {
   const navItems = [
     { href: '/admin/dashboard', icon: 'fa-tachometer-alt', label: 'Dashboard' },
     { href: '/admin/users', icon: 'fa-users', label: 'Users' },
-    { href: '/admin/inventory', icon: 'fa-warehouse', label: 'Inventory' }, // <-- ADD THIS
+    { href: '/admin/inventory', icon: 'fa-warehouse', label: 'Inventory' },
     { href: '/admin/redemptions', icon: 'fa-box-open', label: 'Redemptions' },
     { href: '/admin/gamification', icon: 'fa-trophy', label: 'Gamification' },
     { href: '/admin/promos', icon: 'fa-tags', label: 'Promo Codes' },
@@ -51,6 +58,19 @@ const AdminLayout = ({ children }) => {
                 </Link>
               </li>
             ))}
+
+            {/* Conditionally rendered link for superadmins */}
+            {adminRole === 'superadmin' && (
+              <li>
+                <Link
+                  href="/admin/management"
+                  className={`${styles.navLink} ${pathname.startsWith('/admin/management') ? styles.navLinkActive : ''}`}
+                >
+                  <i className="fas fa-user-shield"></i>
+                  <span>Admin Management</span>
+                </Link>
+              </li>
+            )}
           </ul>
         </nav>
         <div className={styles.sidebarFooter}>

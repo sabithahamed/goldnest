@@ -1,7 +1,8 @@
 // backend/controllers/adminSettingsController.js
 const Setting = require('../models/Setting');
 const { appendPriceToCsv } = require('../utils/csvUtils');
-const { invalidateFeeCache } = require('../utils/feeUtils'); // <-- IMPORT THE NEW FUNCTION
+const { invalidateFeeCache } = require('../utils/feeUtils');
+const { logAdminAction } = require('../services/auditLogService'); // <-- ADD THIS IMPORT
 
 // A helper to get all settings at once
 const getSettings = async (req, res) => {
@@ -35,6 +36,9 @@ const updateSettings = async (req, res) => {
         });
 
         await Promise.all(updatePromises);
+        
+        // Log the admin action
+        await logAdminAction(req.admin, 'Updated platform settings', { type: 'Setting' }, { updatedKeys: Object.keys(settingsToUpdate) });
         
         // After successfully updating the settings in the DB, clear the cache.
         invalidateFeeCache();
