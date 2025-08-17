@@ -23,7 +23,11 @@ const transactionSchema = new mongoose.Schema({
     default: 'completed' // Keep default as per original, adjust if needed per transaction type logic elsewhere
   },
   relatedRedemptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Redemption' }, // Link if using a separate Redemption model (Confirmed presence)
-
+  paymentSource: {
+    type: String,
+    enum: ['wallet', 'direct'], // 'direct' means card/bank
+    default: 'wallet'
+  },
   // --- Fields specific to redemption or potentially sell_gold (if shipped) transaction types ---
   shippingAddress: { // Store address used for this specific shipment if applicable
       fullName: String,

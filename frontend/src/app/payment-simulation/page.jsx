@@ -22,9 +22,10 @@ export default function PaymentSimulationPage() {
         const detailsString = sessionStorage.getItem('paymentDetails');
         if (detailsString) {
             setPaymentDetails(JSON.parse(detailsString));
-            // DO NOT clear storage here, the backend needs the promo code
+            // sessionStorage.removeItem('paymentDetails'); // Don't remove yet
         } else {
             setError("Payment details not found. Redirecting...");
+            // Redirect to deposit as it's the most common entry point
             setTimeout(() => router.push('/deposit'), 2000);
         }
     }, [router]);
@@ -36,24 +37,43 @@ export default function PaymentSimulationPage() {
         }
         setLoading(true);
         setError('');
-
         try {
             const token = localStorage.getItem('userToken');
+            if (!token) {
+                setError("Authentication error. Please log in again.");
+                setLoading(false);
+                return;
+            }
+
             const config = { headers: { Authorization: `Bearer ${token}` } };
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
             
-            // Send the amount to pay and the promo to apply
-            const payload = { 
-                amountLKR: paymentDetails.amountToPay, 
-                promoCode: paymentDetails.promoToApply 
-            };
+            // The logic now differentiates based on which sessionStorage item is present
+            const investmentDetailsString = sessionStorage.getItem('investmentDetails');
+            const depositDetailsString = sessionStorage.getItem('paymentDetails');
 
-            await axios.post(`${backendUrl}/api/wallet/deposit`, payload, config);
-            
-            // Clear storage AFTER successful API call
+            if (investmentDetailsString) { // This is a direct GOLD PURCHASE
+                const investmentDetails = JSON.parse(investmentDetailsString);
+                const payload = { 
+                    ...investmentDetails,
+                    paymentSource: 'direct' // Assuming a field to denote direct card payment
+                };
+                await axios.post(`${backendUrl}/api/investments/invest`, payload, config);
+                sessionStorage.removeItem('investmentDetails');
+            } else if (depositDetailsString) { // This is a WALLET DEPOSIT
+                // The paymentDetails from state already has the structured data
+                const payload = { 
+                    amountLKR: paymentDetails.amountToPay, 
+                    promoCode: paymentDetails.promoToApply 
+                };
+                await axios.post(`${backendUrl}/api/wallet/deposit`, payload, config);
+            } else {
+                throw new Error("No payment details found in session.");
+            }
+
+            // Clean up session storage and redirect on success
             sessionStorage.removeItem('paymentDetails');
             router.push('/payment-success');
-
         } catch (err) {
             setError(err.response?.data?.message || 'Payment processing failed. Please try again.');
             setLoading(false);
@@ -86,12 +106,12 @@ export default function PaymentSimulationPage() {
                 <div className={styles.summary}>
                     <div className={styles.summaryRow}>
                         <span className={styles.summaryLabel}>Payment Amount:</span>
-                        <span className={styles.summaryValue}>{formatCurrency(paymentDetails.amountToPay)}</span>
+                        <span className={styles.summaryValue}>{formatCurrency(paymentDetails?.amountToPay || 0)}</span>
                     </div>
-                     {paymentDetails.bonus > 0 && (
+                     {paymentDetails?.bonusAmount > 0 && (
                         <div className={`${styles.summaryRow} text-green-600`}>
                            <span className={styles.summaryLabel}>Promo Bonus:</span>
-                           <span className={styles.summaryValue}>+{formatCurrency(paymentDetails.bonus)}</span>
+                           <span className={styles.summaryValue}>+{formatCurrency(paymentDetails.bonusAmount)}</span>
                         </div>
                      )}
                 </div>
@@ -102,13 +122,13 @@ export default function PaymentSimulationPage() {
 
                 <button 
                     onClick={handleConfirmPayment}
-                    disabled={loading}
+                    disabled={loading || !paymentDetails}
                     className={styles.confirmButton}
                 >
                     {loading ? (
                         <><i className="fas fa-spinner fa-spin mr-2"></i>Processing...</>
                     ) : (
-                        `Confirm Payment of ${formatCurrency(paymentDetails.amountToPay)}`
+                        `Confirm Payment of ${formatCurrency(paymentDetails?.amountToPay || 0)}`
                     )}
                 </button>
                  <button 
