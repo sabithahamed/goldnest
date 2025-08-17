@@ -23,7 +23,11 @@ const transactionSchema = new mongoose.Schema({
     default: 'completed' // Keep default as per original, adjust if needed per transaction type logic elsewhere
   },
   relatedRedemptionId: { type: mongoose.Schema.Types.ObjectId, ref: 'Redemption' }, // Link if using a separate Redemption model (Confirmed presence)
-
+  paymentSource: {
+    type: String,
+    enum: ['wallet', 'direct'], // 'direct' means card/bank
+    default: 'wallet'
+  },
   // --- Fields specific to redemption or potentially sell_gold (if shipped) transaction types ---
   shippingAddress: { // Store address used for this specific shipment if applicable
       fullName: String,
@@ -111,6 +115,11 @@ const userSchema = new mongoose.Schema({
   goldBalanceGrams: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative gold
   cashBalanceLKR: { type: Number, required: true, default: 0.0, min: 0 }, // Ensure non-negative cash
 
+    isLocked: {
+    type: Boolean,
+    default: false // Users are not locked by default
+  },
+  
   transactions: [transactionSchema], // Array of transactions
 
   defaultShippingAddress: shippingAddressSchema, // Store user's preferred default shipping address

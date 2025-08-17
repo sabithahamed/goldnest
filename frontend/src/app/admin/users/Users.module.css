@@ -1,0 +1,132 @@
+/* src/app/admin/users/Users.module.css */
+
+.pageWrapper {
+    background-color: #ffffff;
+    padding: 1.5rem; /* ~24px */
+    border-radius: 0.5rem; /* rounded-lg */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+.header {
+    font-size: 1.5rem; /* text-2xl */
+    font-weight: 700; /* font-bold */
+    color: #1a202c; /* dark grey */
+    margin-bottom: 1.5rem;
+}
+
+.searchForm {
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.searchInput {
+    flex-grow: 1;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    color: #374151;
+}
+.searchInput:focus {
+    outline: none;
+    border-color: #F8B612;
+    box-shadow: 0 0 0 2px rgba(248, 182, 18, 0.2);
+}
+
+.searchButton {
+    background-color: #1a202c; /* dark grey/black */
+    color: #ffffff;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.searchButton:hover {
+    background-color: #2d3748;
+}
+
+.tableContainer {
+    overflow-x: auto;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+
+.usersTable {
+    min-width: 100%;
+    background-color: #ffffff;
+}
+
+.usersTable thead {
+    background-color: #f9fafb; /* very light grey */
+}
+
+.usersTable th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.75rem; /* text-xs */
+    font-weight: 500;
+    color: #6b7280; /* medium grey */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.usersTable tbody {
+    divide-y: 1px solid #e5e7eb;
+}
+
+.usersTable td {
+    padding: 1rem 1rem;
+    white-space: nowrap;
+    font-size: 0.875rem; /* text-sm */
+    color: #374151;
+}
+
+.viewButton {
+    color: #2563eb; /* blue */
+    font-weight: 500;
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+.viewButton:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+.paginationControls {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.paginationButton {
+    background-color: #e5e7eb;
+    color: #374151;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.paginationButton:hover {
+    background-color: #d1d5db;
+}
+
+.paginationButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.paginationInfo {
+    font-size: 0.875rem;
+    color: #4b5563;
+}

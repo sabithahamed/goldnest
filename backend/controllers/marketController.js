@@ -1,5 +1,6 @@
 // backend/controllers/marketController.js
-const { getGoldMarketSummary, loadGoldData } = require('../utils/goldDataUtils'); // <-- IMPORT loadGoldData
+const { getGoldMarketSummary, loadGoldData } = require('../utils/goldDataUtils');
+const { getFeeConfig } = require('../utils/feeUtils'); // <-- IMPORT getFeeConfig
 
 // @desc    Get latest gold market summary (price, change, etc.)
 // @route   GET /api/market/gold-summary
@@ -36,4 +37,17 @@ const getHistoricalGoldData = (req, res) => {
     }
 };
 
-module.exports = { getGoldSummary, getHistoricalGoldData };
+// @desc    Get the current platform fee configuration
+// @route   GET /api/market/fees
+// @access  Public
+const getFees = async (req, res) => { // <-- Make it async
+    try {
+        const fees = await getFeeConfig(); // <-- await the async function
+        res.json(fees);
+    } catch (error) {
+        console.error("Error getting fee configuration:", error);
+        res.status(500).json({ message: "Server error fetching fees." });
+    }
+};
+
+module.exports = { getGoldSummary, getHistoricalGoldData, getFees }; // <-- EXPORT getFees

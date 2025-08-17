@@ -19,6 +19,7 @@
     "csv-parse": "^5.6.0",
     "express": "^5.1.0",
     "express-async-handler": "^1.2.0",
+    "fast-csv": "^5.0.5",
     "groq-sdk": "^0.19.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.15.0",

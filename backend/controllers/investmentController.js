@@ -5,7 +5,7 @@ const { getGoldMarketSummary } = require('../utils/goldDataUtils');
 const { updateGamificationOnAction } = require('../services/gamificationTriggerService');
 const { createNotification } = require('../services/notificationService');
 const { calculateBuyFee } = require('../utils/feeUtils'); // Import the base fee calculation function
-const { mintTokens } = require('../services/blockchainService'); // <--- ADDED
+const { mintTokens } = require('../services/blockchainService');
 
 // Helper function for formatting currency
 const formatCurrency = (value) => {
@@ -22,8 +22,8 @@ const formatCurrency = (value) => {
 const makeInvestment = async (req, res) => {
     // --- V V V START OF INVESTMENT PROCESS V V V ---
     try {
-        // --- Destructure all potential fields ---
-        const { amountLKR, saveAsAuto, frequency, dayOfMonth } = req.body; // Get amount, auto-save flag, frequency, and potentially dayOfMonth
+        // --- MODIFIED: Add paymentSource to destructuring ---
+        const { amountLKR, saveAsAuto, frequency, dayOfMonth, paymentSource } = req.body;
         const userId = req.user._id; // Get user ID from protect middleware
 
         // --- V V V ADDED LOGGING V V V ---
@@ -76,7 +76,7 @@ const makeInvestment = async (req, res) => {
         const pricePerGram = marketSummary.latestPricePerGram;
 
         // --- Calculate Base Fee ---
-        let feeLKR = calculateBuyFee(investmentAmount); // Calculate initial fee
+        let feeLKR = await calculateBuyFee(investmentAmount); // <-- ADDED AWAIT
         let appliedDiscountPercent = 0; // Track if a discount was applied
         let appliedDiscountChallengeId = null; // Track which challenge provided the discount
         let discountApplied = false; // Flag to easily check if discount logic was successful
@@ -125,31 +125,45 @@ const makeInvestment = async (req, res) => {
         // --- Calculate Total Cost (Investment + potentially discounted Fee) ---
         const totalCostLKR = investmentAmount + feeLKR;
 
-        // --- Check if user has enough cash balance ---
-        if (user.cashBalanceLKR < totalCostLKR) {
-            // Provide specific error message including required amount and potentially discounted fee
-            const feeMessage = appliedDiscountPercent > 0
-                ? `${formatCurrency(feeLKR)} (after ${appliedDiscountPercent * 100}% discount)`
-                : formatCurrency(feeLKR);
-            return res.status(400).json({
-                message: `Insufficient funds. Required: ${formatCurrency(totalCostLKR)} (Investment: ${formatCurrency(investmentAmount)} + Fee: ${feeMessage}), Available: ${formatCurrency(user.cashBalanceLKR)}`
-            });
+        // --- NEW CORE LOGIC: Check Payment Source ---
+        if (paymentSource === 'wallet') {
+            // This is a purchase using the user's GoldNest wallet
+            if (user.cashBalanceLKR < totalCostLKR) {
+                const feeMessage = appliedDiscountPercent > 0
+                    ? `${formatCurrency(feeLKR)} (after ${appliedDiscountPercent * 100}% discount)`
+                    : formatCurrency(feeLKR);
+                return res.status(400).json({
+                    message: `Insufficient wallet funds. Required: ${formatCurrency(totalCostLKR)} (Investment: ${formatCurrency(investmentAmount)} + Fee: ${feeMessage}), Available: ${formatCurrency(user.cashBalanceLKR)}`
+                });
+            }
+            // Deduct from wallet balance
+            user.cashBalanceLKR -= totalCostLKR;
+        } else {
+            // This is a "direct purchase" via Card/Bank.
+            // We do NOT deduct from the user's wallet balance.
+            // The funds are assumed to be handled by the payment gateway.
+            console.log(`[InvestCtrl] Processing direct purchase for user ${userId}. Wallet balance will not be deducted.`);
         }
+        // --- END NEW CORE LOGIC ---
 
         // --- Calculate gold amount purchased ---
-        // Calculation based on the investmentAmount (amount intended for gold)
-        let amountGrams = investmentAmount / pricePerGram;
-
-        // Round to a safe number of decimals (e.g., 7) to prevent blockchain errors.
-        // This is plenty of precision for grams of gold.
-        amountGrams = parseFloat(amountGrams.toFixed(7)); 
+        const amountGrams = parseFloat((investmentAmount / pricePerGram).toFixed(8));
 
         // --- Update User Balances ---
-        user.cashBalanceLKR -= totalCostLKR;
+        // Gold balance is updated for both payment sources
         user.goldBalanceGrams += amountGrams;
 
-        // --- Create Transaction Record ---
-        let description = `Invested ${formatCurrency(investmentAmount)} for ${amountGrams.toFixed(4)}g gold (+ ${formatCurrency(feeLKR)} fee)`;
+        // --- Create Transaction Record (add payment source for clarity) ---
+        // OLD //let description = `Invested ${formatCurrency(investmentAmount)} for ${amountGrams.toFixed(4)}g gold via ${paymentSource === 'wallet' ? 'Wallet Cash' : 'Card/Bank'}`;
+
+        // --- NEW, IMPROVED DESCRIPTION LOGIC ---
+        let paymentMethodText = 'Wallet Cash';
+        if (paymentSource === 'direct') {
+            paymentMethodText = 'Card / Bank';
+        }
+        let description = `Invested ${formatCurrency(investmentAmount)} for ${amountGrams.toFixed(4)}g gold via ${paymentMethodText}`;
+        // --- END IMPROVEMENT ---
+
         if (appliedDiscountPercent > 0) { // Append discount info to description
             description += ` - Discount Applied: ${appliedDiscountPercent * 100}%`;
         }
@@ -160,6 +174,7 @@ const makeInvestment = async (req, res) => {
             amountGrams: amountGrams,
             feeLKR: feeLKR, // Store the potentially discounted fee
             pricePerGramLKR: pricePerGram, // Store the rate used
+            paymentSource: paymentSource || 'direct', // Default to 'direct' if not provided
             timestamp: new Date(), // Store the time of the transaction
             description: description, // Use the updated description
             status: 'completed' // Assume instant completion for simulation
@@ -287,7 +302,7 @@ const makeInvestment = async (req, res) => {
              }
              try {
                  // Modify notification message based on discount and auto-invest status
-                 let notifyMsg = `You invested ${formatCurrency(savedTransaction.amountLKR)} (+ ${formatCurrency(savedTransaction.feeLKR)} fee) and received ${savedTransaction.amountGrams.toFixed(4)}g of gold. Total ${formatCurrency(totalCostLKR)} deducted.`;
+                 let notifyMsg = `You invested ${formatCurrency(savedTransaction.amountLKR)} (+ ${formatCurrency(savedTransaction.feeLKR)} fee) and received ${savedTransaction.amountGrams.toFixed(4)}g of gold. Total cost ${formatCurrency(totalCostLKR)}.`;
                  if (appliedDiscountPercent > 0) {
                       notifyMsg += ` A ${appliedDiscountPercent * 100}% fee discount was applied!`;
                  }
@@ -319,11 +334,11 @@ const makeInvestment = async (req, res) => {
 
         // --- Send Success Response ---
         // Construct the main success message, including discount info and auto-invest setup info
-        let successMessage = `Investment successful! ${formatCurrency(totalCostLKR)} deducted (incl. ${formatCurrency(feeLKR)} fee`;
+        let successMessage = `Investment successful! You acquired ${amountGrams.toFixed(4)}g of gold`;
         if (appliedDiscountPercent > 0) {
-            successMessage += ` after ${appliedDiscountPercent * 100}% discount`;
+            successMessage += ` with a ${appliedDiscountPercent * 100}% fee discount`;
         }
-        successMessage += `).${autoInvestMessage}`; // Append the auto-invest message
+        successMessage += `.${autoInvestMessage}`; // Append the auto-invest message
 
         res.status(200).json({
             message: successMessage.trim(), // Trim any potential leading/trailing whitespace

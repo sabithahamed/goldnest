@@ -49,7 +49,7 @@ const sellGold = async (req, res) => {
 
         // --- Calculation ---
         const grossProceedsLKR = requiredGrams * currentPricePerGram;
-        const sellFeeLKR = calculateSellFee(grossProceedsLKR); // Calculate the fee based on gross proceeds
+        const sellFeeLKR = await calculateSellFee(grossProceedsLKR); // Calculate the fee based on gross proceeds
         const netProceedsLKR = grossProceedsLKR - sellFeeLKR;   // Net amount user receives
 
         // Ensure net proceeds are not negative (although unlikely with positive prices/fees)

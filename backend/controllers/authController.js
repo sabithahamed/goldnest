@@ -152,12 +152,22 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
     try {
         // Fetch user, including password and verification status
-        const user = await User.findOne({ email: email.toLowerCase() }).select('+password +isEmailVerified'); // Explicitly select isEmailVerified
+        const user = await User.findOne({ email: email.toLowerCase() }).select('+password +isEmailVerified +isLocked'); // Explicitly select isEmailVerified
 
         // Scenario 1: User not found
         if (!user) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
+
+        // --- NEW SECURITY CHECK ---
+        // Scenario 1.5: User is locked
+        if (user.isLocked) {
+            console.log(`Login attempt failed for locked account: ${email}`);
+            return res.status(403).json({ // 403 Forbidden is appropriate
+                message: 'Your account has been locked. Please contact support.'
+            });
+        }
+        // --- END NEW SECURITY CHECK ---
 
         // Scenario 2: Password doesn't match
         if (!(await user.matchPassword(password))) {

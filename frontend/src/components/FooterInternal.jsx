@@ -16,11 +16,12 @@ export default function FooterInternal() {
         <div className="footer-content">
             <div className="footer-section logo-section">
                 {/* Link to dashboard for internal pages */}
-                <Link href="/dashboard">
+                <Link href="/">
                     <Image src={logoSrc} alt="GoldNest Logo Small" width={100} height={30} loading="lazy"/>
                 </Link>
                 {/* Use correct support email */}
                 <p><a href="mailto:support@goldnest.com" aria-label="Email GoldNest Support">support@goldnest.com</a></p>
+                <p><Link href="/gn-admin-portal">GoldNest (Admin)</Link></p>
             </div>
             <div className="footer-section">
                 <h4>Navigation</h4>

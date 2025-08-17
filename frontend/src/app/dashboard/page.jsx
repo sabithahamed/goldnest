@@ -550,103 +550,100 @@ export default function DashboardPage() {
              </div>
          </div>
 
-        {/* Bottom Row (Gamification, Alerts, Redeem - Remain Unchanged) */}
+        {/* Bottom Row */}
         <div className={`${styles.dashboardRow} ${styles.bottomRow}`}>
-          {/* Gamification Card */}
+          {/* --- V V V Gamification Card - UPDATED V V V --- */}
           <div className={styles.card}>
             <h3>Gamification Progress</h3>
             {activeChallenges.length > 0 ? (
-              <div className={styles.gamification}>
-                {activeChallenges.slice(0, 2).map((challenge) => {
-                  if (!challenge || typeof challenge.goal !== 'number') return null;
-                  const currentProgress = challengeProgressMap[challenge.id] || 0;
-                  const goal = challenge.goal;
-                  const progressPercent = goal > 0 ? Math.min(100, (currentProgress / goal) * 100) : (currentProgress > 0 ? 100 : 0);
-                  const isCompleted = currentProgress >= goal;
-                  const isClaimed = challengeProgressMap[`${challenge.id}_claimed`] === true;
-                  const canClaim = isCompleted && challenge.rewardType === 'claimable' && !isClaimed;
-                  const needed = Math.max(0, goal - currentProgress);
+                <div className={styles.gamification}>
+                    {activeChallenges.slice(0, 2).map((challenge) => {
+                        if (!challenge || typeof challenge.goal !== 'number') return null;
+                        
+                        // --- START OF FIX ---
+                        // Use challenge._id for the key, as it comes from MongoDB
+                        const challengeIdStr = challenge._id.toString(); 
+                        // --- END OF FIX ---
 
-                  let progressText = 'Error calculating progress';
-                    if (isCompleted) {
-                        progressText = 'Completed!';
-                    } else if (goal > 0) {
-                        progressText = `${challenge.unit === 'LKR' ? formatCurrency(needed) : needed.toFixed(0)} ${challenge.unit || ''} more`;
-                    } else {
-                        progressText = 'Goal reached!';
-                    }
-                  const iconClass = `fas ${isCompleted ? 'fa-check-circle' : challenge.icon || 'fa-trophy'}`;
+                        const currentProgress = challengeProgressMap[challengeIdStr] || 0;
+                        const goal = challenge.goal;
+                        const progressPercent = goal > 0 ? Math.min(100, (currentProgress / goal) * 100) : (currentProgress > 0 ? 100 : 0);
+                        const isCompleted = currentProgress >= goal;
+                        const isClaimed = challengeProgressMap[`${challengeIdStr}_claimed`] === true;
+                        const needed = Math.max(0, goal - currentProgress);
+                        
+                        let progressText = 'Error calculating progress';
+                        if (isCompleted) {
+                            progressText = 'Completed!';
+                        } else if (goal > 0) {
+                            progressText = `${challenge.unit === 'LKR' ? formatCurrency(needed) : needed.toFixed(0)} ${challenge.unit || ''} more`;
+                        } else {
+                            progressText = 'Goal reached!';
+                        }
+                        const iconClass = `fas ${isCompleted ? 'fa-check-circle' : challenge.icon || 'fa-trophy'}`;
 
-                  return (
-                    <div
-                      key={challenge.id}
-                      className={`${styles.progressItem} ${isCompleted ? styles.completed : ''}`}
-                      data-status={isCompleted ? 'completed' : 'incomplete'}
-                    >
-                      <Link href="/gamification" className={styles.progressLink}>
-                        <i className={`${iconClass} ${isCompleted ? 'text-green-500' : 'text-gray-400'}`}></i>
-                        <div className={styles.progressText}>
-                          <p>
-                            {challenge.name || 'Unnamed Challenge'}
-                            {challenge.starsAwarded > 0 && (
-                              <span className={styles.starEarn}>
-                                {' '}
-                                Earn {challenge.starsAwarded} ★
-                              </span>
-                            )}
-                          </p>
-                          {challenge.rewardText && (
-                            <p className={styles.rewardText}>
-                              Reward: {challenge.rewardText}
-                              {isCompleted && isClaimed && (
-                                <span className={styles.badge}>Claimed</span>
-                              )}
-                               {isCompleted && !isClaimed && challenge.rewardType !== 'claimable' && (
-                                <span className={styles.badge}>Earned</span>
-                              )}
-                            </p>
-                          )}
-                          <div className={styles.progressBar}>
+                        return (
                             <div
-                              className={`${styles.progress} ${isCompleted ? 'bg-green-500' : 'bg-blue-500'}`}
-                              style={{ width: `${progressPercent}%` }}
-                            ></div>
-                          </div>
-                          <p className={styles.progressAmount}>{progressText}</p>
-                        </div>
-                      </Link>
-                      <div className={styles.progressCta}>
-                        {canClaim ? (
-                          <Link href="/claim-reward" className={styles.ctaBtnClaim}>
-                            Claim
-                          </Link>
-                        ) : isCompleted ? (
-                           <span className={styles.badge}>Done</span>
-                        ) : (
-                          <Link
-                            href={challenge.ctaLink || '/trade'}
-                            className={styles.ctaBtnGo}
-                          >
-                            {challenge.ctaText || 'Go'}
-                          </Link>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-                <Link
-                  href="/gamification"
-                  className={`${styles.btnSecondary} ${styles.seeMore}`}
-                >
-                  Go to Rewards <i className="fas fa-arrow-right"></i>
-                </Link>
-              </div>
+                                // --- APPLY THE FIX HERE ---
+                                key={challenge._id} 
+                                className={`${styles.progressItem} ${isCompleted ? styles.completed : ''}`}
+                                data-status={isCompleted ? 'completed' : 'incomplete'}
+                            >
+                                <Link href="/gamification" className={styles.progressLink}>
+                                    <i className={`${iconClass} ${isCompleted ? 'text-green-500' : 'text-gray-400'}`}></i>
+                                    <div className={styles.progressText}>
+                                        <p>
+                                            {challenge.name || 'Unnamed Challenge'}
+                                            {/* Use rewardValue for stars from dynamic challenges */}
+                                            {challenge.rewardValue > 0 && ( 
+                                                <span className={styles.starEarn}>
+                                                    {' '}
+                                                    Earn {challenge.rewardValue} ★
+                                                </span>
+                                            )}
+                                        </p>
+                                        {challenge.rewardText && (
+                                            <p className={styles.rewardText}>
+                                                Reward: {challenge.rewardText}
+                                                {/* Your badge logic here */}
+                                            </p>
+                                        )}
+                                        <div className={styles.progressBar}>
+                                            <div
+                                                className={`${styles.progress} ${isCompleted ? 'bg-green-500' : 'bg-blue-500'}`}
+                                                style={{ width: `${progressPercent}%` }}
+                                            ></div>
+                                        </div>
+                                        <p className={styles.progressAmount}>{progressText}</p>
+                                    </div>
+                                </Link>
+                                <div className={styles.progressCta}>
+                                     {isCompleted && !isClaimed ? (
+                                        <Link href="/gamification" className={styles.ctaBtnClaim}>
+                                            Claim
+                                        </Link>
+                                    ) : isCompleted ? (
+                                       <span className={styles.badge}>Done</span>
+                                    ) : (
+                                        <Link href={'/trade'} className={styles.ctaBtnGo}>
+                                            Go
+                                        </Link>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                    <Link href="/gamification" className={`${styles.btnSecondary} ${styles.seeMore}`}>
+                        Go to Rewards <i className="fas fa-arrow-right"></i>
+                    </Link>
+                </div>
             ) : (
-              <p className="text-center text-gray-500 py-6 px-4">
-                No active challenges right now. Keep investing!
-              </p>
+                <p className="text-center text-gray-500 py-6 px-4">
+                    No active challenges right now. Keep investing!
+                </p>
             )}
           </div>
+          {/* --- ^ ^ ^ Gamification Card - UPDATED ^ ^ ^ --- */}
 
           {/* Alerts Card */}
           <div className={styles.card}>

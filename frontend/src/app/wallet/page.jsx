@@ -233,43 +233,85 @@ export default function WalletPage() {
         let status = tx.status?.toLowerCase() || 'completed';
 
         switch (tx.type) {
-            case 'deposit': cashAmountDisplay = `+ ${formatCurrency(tx.amountLKR)}`; cashClass = 'positive'; totalDisplay = formatCurrency(tx.amountLKR); break;
-            case 'withdrawal': cashAmountDisplay = `- ${formatCurrency(tx.amountLKR)}`; cashClass = 'negative'; totalDisplay = formatCurrency(tx.amountLKR); break;
-            case 'investment': cashAmountDisplay = `- ${formatCurrency(tx.amountLKR)}`; cashClass = 'negative'; goldAmountDisplay = `+ ${tx.amountGrams?.toFixed(3)} g`; goldClass = 'positive'; rateDisplay = tx.amountGrams > 0 ? `${formatCurrency(tx.amountLKR / tx.amountGrams)}/g` : 'N/A'; totalDisplay = `${tx.amountGrams?.toFixed(3)} g`; break;
-            case 'sell_gold': cashAmountDisplay = `+ ${formatCurrency(tx.amountLKR)}`; cashClass = 'positive'; goldAmountDisplay = `- ${tx.amountGrams?.toFixed(3)} g`; goldClass = 'negative'; rateDisplay = tx.amountGrams > 0 ? `${formatCurrency(tx.amountLKR / tx.amountGrams)}/g` : 'N/A'; totalDisplay = formatCurrency(tx.amountLKR); break;
-            case 'redemption': goldAmountDisplay = `- ${tx.amountGrams?.toFixed(3)} g`; goldClass = 'negative'; feeDisplay = tx.feeLKR ? `- ${formatCurrency(tx.feeLKR)}` : '—'; totalDisplay = `${tx.amountGrams?.toFixed(3)} g`; break;
-            case 'bonus': cashAmountDisplay = tx.amountLKR ? `+ ${formatCurrency(tx.amountLKR)}` : '—'; if(cashAmountDisplay !== '—') cashClass = 'positive'; goldAmountDisplay = tx.amountGrams ? `+ ${tx.amountGrams?.toFixed(3)} g` : '—'; if(goldAmountDisplay !== '—') goldClass = 'positive'; totalDisplay = cashAmountDisplay !== '—' ? cashAmountDisplay : goldAmountDisplay; break;
-            case 'fee': cashAmountDisplay = tx.amountLKR ? `- ${formatCurrency(tx.amountLKR)}` : '—'; if(cashAmountDisplay !== '—') cashClass = 'negative'; feeDisplay = formatCurrency(tx.amountLKR); totalDisplay = formatCurrency(tx.amountLKR); break;
-            default: cashAmountDisplay = tx.amountLKR ? formatCurrency(tx.amountLKR) : '—'; goldAmountDisplay = tx.amountGrams ? `${tx.amountGrams.toFixed(3)} g` : '—'; totalDisplay = cashAmountDisplay !== '—' ? cashAmountDisplay : goldAmountDisplay; break;
+            case 'deposit': 
+                cashAmountDisplay = `+ ${formatCurrency(tx.amountLKR)}`; 
+                cashClass = 'positive'; 
+                totalDisplay = formatCurrency(tx.amountLKR); 
+                break;
+            case 'withdrawal': 
+                cashAmountDisplay = `- ${formatCurrency(tx.amountLKR)}`; 
+                cashClass = 'negative'; 
+                totalDisplay = formatCurrency(tx.amountLKR); 
+                break;
+            
+            // --- START OF FIX ---
+            case 'investment':
+                // Only show a cash deduction if the source was the wallet
+                if (tx.paymentSource === 'wallet') {
+                    cashAmountDisplay = `- ${formatCurrency(tx.amountLKR + tx.feeLKR)}`; // Show total cost deducted
+                    cashClass = 'negative';
+                } else {
+                    // For direct card payments, there is no cash movement in our wallet
+                    cashAmountDisplay = '—'; 
+                    cashClass = '';
+                }
+                goldAmountDisplay = `+ ${tx.amountGrams?.toFixed(4)} g`; 
+                goldClass = 'positive'; 
+                rateDisplay = tx.pricePerGramLKR ? `${formatCurrency(tx.pricePerGramLKR)}/g` : 'N/A';
+                feeDisplay = tx.feeLKR ? `${formatCurrency(tx.feeLKR)}` : '—';
+                totalDisplay = `${tx.amountGrams?.toFixed(4)} g`; 
+                break;
+            // --- END OF FIX ---
+            
+            case 'sell_gold': 
+                cashAmountDisplay = `+ ${formatCurrency(tx.amountLKR)}`; 
+                cashClass = 'positive'; 
+                goldAmountDisplay = `- ${tx.amountGrams?.toFixed(4)} g`; 
+                goldClass = 'negative'; 
+                rateDisplay = tx.pricePerGramLKR ? `${formatCurrency(tx.pricePerGramLKR)}/g` : 'N/A';
+                feeDisplay = tx.feeLKR ? `- ${formatCurrency(tx.feeLKR)}` : '—';
+                totalDisplay = formatCurrency(tx.amountLKR); 
+                break;
+            case 'redemption': 
+                goldAmountDisplay = `- ${tx.amountGrams?.toFixed(4)} g`; 
+                goldClass = 'negative'; 
+                feeDisplay = tx.feeLKR ? `- ${formatCurrency(tx.feeLKR)}` : '—'; 
+                totalDisplay = `${tx.amountGrams?.toFixed(4)} g`; 
+                break;
+            case 'bonus': 
+                cashAmountDisplay = tx.amountLKR ? `+ ${formatCurrency(tx.amountLKR)}` : '—'; 
+                if(cashAmountDisplay !== '—') cashClass = 'positive'; 
+                goldAmountDisplay = tx.amountGrams ? `+ ${tx.amountGrams?.toFixed(4)} g` : '—'; 
+                if(goldAmountDisplay !== '—') goldClass = 'positive'; 
+                totalDisplay = cashAmountDisplay !== '—' ? cashAmountDisplay : goldAmountDisplay; 
+                break;
+            case 'fee': 
+                cashAmountDisplay = tx.amountLKR ? `- ${formatCurrency(tx.amountLKR)}` : '—'; 
+                if(cashAmountDisplay !== '—') cashClass = 'negative'; 
+                feeDisplay = formatCurrency(tx.feeLKR); 
+                totalDisplay = formatCurrency(tx.amountLKR); 
+                break;
+            default: 
+                cashAmountDisplay = tx.amountLKR ? formatCurrency(tx.amountLKR) : '—'; 
+                goldAmountDisplay = tx.amountGrams ? `${tx.amountGrams.toFixed(4)} g` : '—'; 
+                totalDisplay = cashAmountDisplay !== '—' ? cashAmountDisplay : goldAmountDisplay; 
         }
 
         return (
             <tr key={tx._id || index}>
-                <td data-label="Date">{formatDate(tx.date)}</td>
-                <td data-label="Type" className="capitalize">{tx.type?.replace('_', ' ') || 'N/A'}</td>
-                <td data-label="Cash Amount" className={cashClass}>{cashAmountDisplay}</td>
-                <td data-label="Gold Amount" className={goldClass}>{goldAmountDisplay}</td>
-                <td data-label="Rate">{rateDisplay}</td>
-                <td data-label="Discount/Fee">{feeDisplay}</td>
-                <td data-label="Total">{totalDisplay}</td>
-                <td data-label="Status"><span className={`status-badge ${status}`}>{status}</span></td>
-                {/* --- NEW/UPDATED CODE BLOCK --- */}
-                <td data-label="Blockchain Proof">
-                    {tx.blockchainTxHash ? (
-                        <a
-                            href={`https://amoy.polygonscan.com/tx/${tx.blockchainTxHash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="tracking-link" // Using existing link style
-                            title="View transaction on PolygonScan (Amoy)"
-                        >
-                            View on Explorer
-                        </a>
-                    ) : (
-                        'Off-Chain'
-                    )}
+                <td>{formatDate(tx.date)}</td>
+                <td className="capitalize">{tx.type?.replace('_', ' ') || 'N/A'}</td>
+                <td className={cashClass}>{cashAmountDisplay}</td>
+                <td className={goldClass}>{goldAmountDisplay}</td>
+                <td>{rateDisplay}</td>
+                <td>{feeDisplay}</td>
+                <td>{totalDisplay}</td>
+                <td><span className={`status-badge ${status}`}>{status}</span></td>
+                <td>
+                     {tx.blockchainTxHash ? (
+                        <a href={`https://amoy.polygonscan.com/tx/${tx.blockchainTxHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View on Explorer</a>
+                    ) : 'Off-Chain'}
                 </td>
-                {/* --- END NEW/UPDATED CODE BLOCK --- */}
             </tr>
         );
     };
