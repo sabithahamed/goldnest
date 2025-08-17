@@ -55,7 +55,20 @@ const AdminLoginPage = () => {
         <div className={styles.logoContainer}>
           <Image src="/GoldNest.png" alt="GoldNest Logo" width={150} height={50} />
         </div>
-
+        <div style={{
+            background: '#fffaf2',
+            border: '1px solid #f5d08c',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            fontSize: '0.9rem',
+            maxWidth: '320px',
+            margin: '0 auto 1.5rem',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
+        }}>
+            <div style={{ fontWeight: 600, color: '#6b4005', marginBottom: '6px' }}>🔑 Demo Credentials</div>
+            <div><strong>Email:</strong> test@goldnest.lk</div>
+            <div><strong>Password:</strong> goldnest-test</div>
+        </div>
         <div className={styles.roleSwitcher}>
             <button 
                 onClick={() => setActiveTab('admin')}
