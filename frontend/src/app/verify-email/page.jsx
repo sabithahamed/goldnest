@@ -141,7 +141,7 @@ function VerifyEmailContent() {
 
                 <p className="switch-auth mt-4 text-sm">
                     Didn't receive the OTP?{' '}
-                    <button onClick={handleResendOtp} disabled={resendLoading || !email} className="link-button disabled:opacity-50 disabled:cursor-not-allowed">
+                    <button onClick={handleResendOtp} disabled={resendLoading || !email} className="link-btn disabled:opacity-50 disabled:cursor-not-allowed">
                         {resendLoading ? 'Sending...' : 'Resend OTP'}
                     </button>
                 </p>

@@ -8,78 +8,117 @@ import { useRouter } from 'next/navigation';
 import NavbarInternal from '@/components/NavbarInternal';
 import FooterInternal from '@/components/FooterInternal';
 import styles from './Withdraw.module.css';
+import { useModal } from '@/contexts/ModalContext'; // Import the modal hook
 
+// Helper
 const formatCurrency = (value) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(value || 0);
 
 export default function WithdrawPage() {
+    const { openGenericModal } = useModal(); // Get the modal function
+    const router = useRouter();
+
     const [amountLKR, setAmountLKR] = useState(100);
     const [withdrawMethod, setWithdrawMethod] = useState('bank-transfer');
-    const withdrawalFee = Math.max(30); // Example: 1% or Rs. 50 minimum
-    
     const [bankDetails, setBankDetails] = useState({ bankName: '', accountNumber: '', accountHolder: '' });
-    const [paypalEmail, setPaypalEmail] = useState('');
-
+    
     const [currentBalance, setCurrentBalance] = useState(0);
     const [loadingUser, setLoadingUser] = useState(true);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-    const router = useRouter();
+    
+    // REMOVED: Old state for popups and errors is no longer needed
+    // const [error, setError] = useState('');
+    // const [successMessage, setSuccessMessage] = useState('');
+
+    const withdrawalFee = Math.max(50, amountLKR * 0.01); // Example fee logic
 
     useEffect(() => {
         const fetchBalance = async () => {
             setLoadingUser(true);
             const token = localStorage.getItem('userToken');
-            if (!token) { router.push('/'); return; }
+            if (!token) { 
+                openGenericModal('Authentication Error', 'Please log in to continue.', 'error');
+                router.push('/');
+                return;
+            }
             const config = { headers: { Authorization: `Bearer ${token}` } };
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
             try {
                 const { data } = await axios.get(`${backendUrl}/api/users/me`, config);
                 setCurrentBalance(data.cashBalanceLKR || 0);
             } catch (err) {
-                setError("Failed to load current balance.");
+                console.error("Error fetching balance:", err);
+                openGenericModal('Load Failed', err.response?.data?.message || 'Failed to load your current balance.', 'error');
                 if (err.response?.status === 401) { localStorage.clear(); router.push('/'); }
             } finally {
                 setLoadingUser(false);
             }
         };
         fetchBalance();
-    }, [router]);
+    }, [router, openGenericModal]);
 
     const handleWithdraw = async (e) => {
         e.preventDefault();
-        setError(''); setSuccessMessage(''); setLoading(true);
+        setLoading(true);
 
-        if (amountLKR < 100) { setError('Minimum withdrawal is Rs. 100.'); setLoading(false); return; }
-        if (amountLKR > currentBalance) { setError('Amount exceeds available balance.'); setLoading(false); return; }
-
-        let detailsToSend = {};
-        if (withdrawMethod === 'bank-transfer') {
-            if (!bankDetails.bankName || !bankDetails.accountNumber || !bankDetails.accountHolder) {
-                setError('Please fill in all bank details.'); setLoading(false); return;
-            }
-            detailsToSend = bankDetails;
-        } else {
-             setError('Selected withdrawal method is not yet supported.'); setLoading(false); return;
+        // --- Validation using Generic Modal ---
+        if (amountLKR < 100) {
+            openGenericModal('Invalid Amount', 'Minimum withdrawal amount is Rs. 100.', 'error');
+            setLoading(false);
+            return;
+        }
+        if (amountLKR > currentBalance) {
+            openGenericModal('Insufficient Balance', 'Withdrawal amount exceeds your available balance.', 'error');
+            setLoading(false);
+            return;
+        }
+        if (withdrawMethod === 'bank-transfer' && (!bankDetails.bankName || !bankDetails.accountNumber || !bankDetails.accountHolder)) {
+            openGenericModal('Missing Details', 'Please fill in all bank details for the transfer.', 'error');
+            setLoading(false);
+            return;
+        }
+        if (withdrawMethod === 'paypal') {
+             openGenericModal('Info', 'PayPal withdrawals are not yet implemented.', 'info');
+             setLoading(false);
+             return;
+        }
+        
+        const token = localStorage.getItem('userToken');
+        if (!token) { 
+            openGenericModal('Authentication Error', 'Your session has expired. Please log in again.', 'error');
+            setLoading(false);
+            return; 
         }
 
-        const token = localStorage.getItem('userToken');
         try {
-            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } };
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
-            const { data } = await axios.post(`${backendUrl}/api/wallet/withdraw`, { amountLKR, bankDetails: detailsToSend }, config);
-            setSuccessMessage(data.message || 'Withdrawal request submitted!');
+            const payload = { amountLKR, bankDetails };
+
+            const { data } = await axios.post(`${backendUrl}/api/wallet/withdraw`, payload, config);
+
+            // --- Success using Generic Modal ---
+            openGenericModal(
+                'Request Submitted!',
+                data.message || 'Your withdrawal request has been successfully submitted for processing.',
+                'success'
+            );
+            // Redirect after the user closes the modal
+            router.push('/wallet');
+
         } catch (err) {
-            setError(err.response?.data?.message || 'Withdrawal failed.');
+            // --- Error using Generic Modal ---
+            openGenericModal(
+                'Withdrawal Failed',
+                err.response?.data?.message || 'An unexpected error occurred. Please try again.',
+                'error'
+            );
+            console.error("Withdraw Error:", err);
         } finally {
             setLoading(false);
         }
     };
-
-     const closePopupAndRedirect = () => {
-        setSuccessMessage('');
-        router.push('/wallet');
-    };
+    
+    // REMOVED: The closePopupAndRedirect function is no longer needed.
 
     return (
         <>
@@ -88,20 +127,7 @@ export default function WithdrawPage() {
                 <div className={styles.card}>
                     <h3 className={styles.header}>Withdraw Money</h3>
                     
-                    {successMessage && (
-                        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
-                            <div className="bg-white p-6 rounded-lg shadow-xl text-center max-w-sm w-full">
-                                <span className="text-5xl text-blue-500 block mb-4">✓</span>
-                                <h4 className="text-lg font-semibold mb-3">Withdrawal Submitted!</h4>
-                                <p className="text-gray-700 mb-6">{successMessage}</p>
-                                <button onClick={closePopupAndRedirect} className="btn btn-primary w-full">
-                                    Go to Wallet
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {error && <p className="error text-center mb-4">{error}</p>}
+                    {/* REMOVED: The manual success popup and error message JSX are gone. */}
 
                     <div className={styles.balanceDisplay}>
                         <p className={styles.balanceLabel}>Available to Withdraw</p>
@@ -152,10 +178,10 @@ export default function WithdrawPage() {
                         </div>
 
                         <div className={styles.actions}>
-                            <button type="submit" className={styles.primaryButton} disabled={loading || loadingUser || !!successMessage || amountLKR > currentBalance}>
+                            <button type="submit" className={styles.primaryButton} disabled={loading || loadingUser || amountLKR > currentBalance}>
                                 {loading ? 'Submitting...' : 'Proceed to Withdraw'}
                             </button>
-                             <Link href="/wallet" className={`${styles.secondaryButton} ${loading || successMessage ? 'pointer-events-none opacity-50' : ''}`}>
+                             <Link href="/wallet" className={`${styles.secondaryButton} ${loading ? 'pointer-events-none opacity-50' : ''}`}>
                                 Cancel
                             </Link>
                         </div>

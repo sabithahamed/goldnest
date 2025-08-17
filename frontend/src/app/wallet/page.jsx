@@ -482,7 +482,7 @@ export default function WalletPage() {
                                                 <div className="form-group">
                                                     <label htmlFor="redeem-size">Select Size (grams):</label>
                                                     <select id="redeem-size" value={customRedeemSize} onChange={(e) => setCustomRedeemSize(e.target.value)}>
-                                                        <option value="0.5">0.5g</option> <option value="1">1g</option> <option value="2">2g</option> <option value="5">5g</option> <option value="8">8g (Sovereign)</option> <option value="10">10g</option>
+                                                        <option value="0.5">0.5g</option> <option value="1">1g</option> <option value="2">2g</option> <option value="5">5g</option> <option value="10">10g</option>
                                                     </select>
                                                 </div>
                                                 <div className="form-group">

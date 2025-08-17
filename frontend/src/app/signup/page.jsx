@@ -126,7 +126,7 @@ export default function SignupPage() {
               </button>
           </form>
 
-          <div className="divider">or</div>
+          <div className="divider center-divider">or</div>
           <button className="social-btn" onClick={handleGoogleSignIn}>
               <Image src={googleIconSrc} alt="Google" width={20} height={20}/> Sign up with Google
           </button>
@@ -136,7 +136,13 @@ export default function SignupPage() {
           <p className="switch-auth">
               Already have an account?{' '}
                 {/* Use button to trigger modal */}
-                <button onClick={openLoginModal} className="link-button">Log In</button> {/* Style as needed */}
+                <button
+                  type="button"
+                  onClick={openLoginModal}
+                  className="link-btn"
+                >
+                  Log In
+                </button>
           </p>
         </div>
 
