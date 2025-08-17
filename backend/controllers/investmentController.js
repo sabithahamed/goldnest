@@ -76,7 +76,7 @@ const makeInvestment = async (req, res) => {
         const pricePerGram = marketSummary.latestPricePerGram;
 
         // --- Calculate Base Fee ---
-        let feeLKR = calculateBuyFee(investmentAmount); // Calculate initial fee
+        let feeLKR = await calculateBuyFee(investmentAmount); // <-- ADDED AWAIT
         let appliedDiscountPercent = 0; // Track if a discount was applied
         let appliedDiscountChallengeId = null; // Track which challenge provided the discount
         let discountApplied = false; // Flag to easily check if discount logic was successful

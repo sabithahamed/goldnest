@@ -13,7 +13,9 @@ const formatDate = (dateString) => {
 const PromoCodeManagementPage = () => {
     const [promoCodes, setPromoCodes] = useState([]);
     const [newPromoCode, setNewPromoCode] = useState({
-        code: '', description: '', bonusType: 'PERCENTAGE_DEPOSIT',
+        code: '', description: '', 
+        promoType: 'DEPOSIT_BONUS', // <-- ADD THIS
+        bonusType: 'PERCENTAGE_DEPOSIT',
         bonusValue: '', expiresAt: ''
     });
     const [loading, setLoading] = useState(true);
@@ -124,6 +126,14 @@ const PromoCodeManagementPage = () => {
                     <div className={styles.formGroup}>
                         <label className={styles.formLabel} htmlFor="bonusValue">Bonus Value</label>
                         <input name="bonusValue" id="bonusValue" type="number" value={newPromoCode.bonusValue} onChange={handleInputChange} placeholder="e.g., 10 for 10% or 500 for LKR" required className={styles.formInput} />
+                    </div>
+                    {/* --- NEW DROPDOWN --- */}
+                    <div className={styles.formGroup}>
+                        <label className={styles.formLabel} htmlFor="promoType">Promo For</label>
+                        <select name="promoType" id="promoType" value={newPromoCode.promoType} onChange={handleInputChange} className={styles.formSelect}>
+                            <option value="DEPOSIT_BONUS">Deposit Bonus</option>
+                            <option value="PURCHASE_BONUS" disabled>Purchase Bonus (Coming Soon)</option>
+                        </select>
                     </div>
                     <div className={styles.formGroup}>
                         <label className={styles.formLabel} htmlFor="expiresAt">Expiry Date</label>

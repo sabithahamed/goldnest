@@ -1,62 +1,103 @@
 // backend/controllers/walletController.js
+const mongoose = require('mongoose'); // <-- IMPORT MONGOOSE for ObjectId
 const User = require('../models/User');
-const { createNotification } = require('../services/notificationService'); // Added import
+const PromoCode = require('../models/PromoCode');
+const { createNotification } = require('../services/notificationService');
 
 // Helper function for formatting currency
-const formatCurrency = (value) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(value);
+const formatCurrency = (value) => new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR' }).format(value || 0);
 
 // @desc    Simulate depositing funds into user's cash wallet
 // @route   POST /api/wallet/deposit
 // @access  Private
 const depositFunds = async (req, res) => {
-    const { amountLKR } = req.body;
+    const { amountLKR, promoCode } = req.body;
     const userId = req.user._id;
 
     // Validation
-    if (!amountLKR || isNaN(amountLKR) || Number(amountLKR) <= 0) {
+    const depositAmount = Number(amountLKR);
+    if (!amountLKR || isNaN(depositAmount) || depositAmount <= 0) {
         return res.status(400).json({ message: 'Invalid deposit amount.' });
     }
-    // Add a reasonable maximum if desired for simulation
-    if (Number(amountLKR) > 1000000) { // Example max
-         return res.status(400).json({ message: 'Deposit amount exceeds maximum limit for simulation.' });
+    if (depositAmount > 1000000) {
+        return res.status(400).json({ message: 'Deposit amount exceeds maximum limit for simulation.' });
     }
 
     try {
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        let bonusAmount = 0;
+        let promoDescription = '';
+        let appliedPromoCode = null;
 
-        // Update cash balance
-        user.cashBalanceLKR += Number(amountLKR);
+        // --- Promo Code Validation & Application Logic ---
+        if (promoCode) {
+            const codeDetails = await PromoCode.findOne({
+                code: promoCode.toUpperCase(),
+                promoType: 'DEPOSIT_BONUS',
+                isActive: true,
+                expiresAt: { $gte: new Date() }
+            });
 
-        // Add transaction record
+            if (codeDetails) {
+                appliedPromoCode = codeDetails; // Store the valid code object
+                if (codeDetails.bonusType === 'PERCENTAGE_DEPOSIT') {
+                    bonusAmount = depositAmount * (codeDetails.bonusValue / 100);
+                } else if (codeDetails.bonusType === 'FLAT_LKR_DEPOSIT') {
+                    bonusAmount = codeDetails.bonusValue;
+                }
+                promoDescription = ` (Promo '${codeDetails.code}' applied)`;
+            } else {
+                // If an invalid code is sent, we should reject the transaction to avoid confusion.
+                return res.status(400).json({ message: `Promo code '${promoCode}' is invalid or expired.` });
+            }
+        }
+        
+        const totalCredited = depositAmount + bonusAmount;
+        user.cashBalanceLKR += totalCredited;
+
+        // Add main deposit transaction record
         user.transactions.push({
+            _id: new mongoose.Types.ObjectId(),
             type: 'deposit',
-            amountLKR: Number(amountLKR),
-            description: `Deposited ${Number(amountLKR).toFixed(2)} LKR via simulation`,
-            status: 'completed' // Deposits usually complete immediately
+            amountLKR: depositAmount,
+            description: `Deposited ${formatCurrency(depositAmount)} via simulation${promoDescription}`,
+            status: 'completed'
         });
+        
+        // If there was a bonus, add a separate bonus transaction for clarity
+        if (bonusAmount > 0 && appliedPromoCode) {
+             user.transactions.push({
+                _id: new mongoose.Types.ObjectId(),
+                type: 'bonus',
+                amountLKR: bonusAmount,
+                description: `Bonus from Promo: ${appliedPromoCode.description}`,
+                status: 'completed'
+            });
+            // Important: Update usage count for the promo code
+            appliedPromoCode.timesUsed += 1;
+            await appliedPromoCode.save();
+        }
 
         const updatedUser = await user.save();
         const newTransaction = updatedUser.transactions[updatedUser.transactions.length - 1];
 
-        // --- Start: New Notification Logic ---
         try {
             await createNotification(userId, 'transaction_deposit', {
                 title: 'Deposit Confirmed',
-                message: `Your deposit of ${formatCurrency(newTransaction.amountLKR)} has been successfully added to your wallet.`,
+                message: `Your deposit of ${formatCurrency(depositAmount)} was successful. Total credited to your wallet: ${formatCurrency(totalCredited)}.`,
                 link: '/wallet',
                 metadata: { transactionId: newTransaction._id }
             });
         } catch (notificationError) {
-             // Log the notification error but don't fail the main operation
             console.error("Error creating deposit notification:", notificationError);
         }
-        // --- End: New Notification Logic ---
 
         res.status(200).json({
-            message: 'Deposit successful (Simulated).',
+            message: `Deposit successful! Total ${formatCurrency(totalCredited)} credited to your wallet.`,
             newCashBalanceLKR: updatedUser.cashBalanceLKR,
-            transaction: newTransaction // Use the extracted transaction
+            transaction: newTransaction
         });
 
     } catch (error) {
@@ -65,19 +106,19 @@ const depositFunds = async (req, res) => {
     }
 };
 
+
 // @desc    Simulate withdrawing funds from user's cash wallet
 // @route   POST /api/wallet/withdraw
 // @access  Private
 const withdrawFunds = async (req, res) => {
-    const { amountLKR, bankDetails } = req.body; // Assuming bankDetails might be needed later
+    const { amountLKR, bankDetails } = req.body;
     const userId = req.user._id;
 
     // Validation
     if (!amountLKR || isNaN(amountLKR) || Number(amountLKR) <= 0) {
         return res.status(400).json({ message: 'Invalid withdrawal amount.' });
     }
-     // Add bank detail validation if implementing further
-     if (!bankDetails || !bankDetails.accountNumber || !bankDetails.bankName) { // Example details needed
+     if (!bankDetails || !bankDetails.accountNumber || !bankDetails.bankName) {
         return res.status(400).json({ message: 'Valid bank details are required for withdrawal.' });
      }
 
@@ -85,26 +126,23 @@ const withdrawFunds = async (req, res) => {
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        // Check sufficient balance
         if (user.cashBalanceLKR < Number(amountLKR)) {
             return res.status(400).json({ message: 'Insufficient wallet balance.' });
         }
 
-        // Update cash balance
         user.cashBalanceLKR -= Number(amountLKR);
 
-        // Add transaction record - mark as pending initially for realism
         user.transactions.push({
+            _id: new mongoose.Types.ObjectId(), // Keep generating ObjectId
             type: 'withdrawal',
             amountLKR: Number(amountLKR),
-            description: `Withdrawal request for ${Number(amountLKR).toFixed(2)} LKR to Acc: ${bankDetails.accountNumber}`, // Include some detail
-            status: 'pending' // Simulate processing time
+            description: `Withdrawal request for ${Number(amountLKR).toFixed(2)} LKR to Acc: ${bankDetails.accountNumber}`,
+            status: 'pending'
         });
 
         const updatedUser = await user.save();
         const newTransaction = updatedUser.transactions[updatedUser.transactions.length - 1];
 
-        // --- Start: New Notification Logic ---
          try {
             await createNotification(userId, 'transaction_withdrawal_request', {
                 title: 'Withdrawal Requested',
@@ -113,18 +151,13 @@ const withdrawFunds = async (req, res) => {
                 metadata: { transactionId: newTransaction._id }
             });
         } catch (notificationError) {
-             // Log the notification error but don't fail the main operation
             console.error("Error creating withdrawal request notification:", notificationError);
         }
-        // --- End: New Notification Logic ---
-
-        // Simulate processing delay/completion later if needed. For now, respond immediately.
-        // In a real app, this might trigger an async process.
 
         res.status(200).json({
             message: 'Withdrawal request submitted successfully (Simulated). Funds will be processed.',
             newCashBalanceLKR: updatedUser.cashBalanceLKR,
-            transaction: newTransaction // Use the extracted transaction
+            transaction: newTransaction
         });
 
     } catch (error) {

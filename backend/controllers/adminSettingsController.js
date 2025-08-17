@@ -1,6 +1,7 @@
 // backend/controllers/adminSettingsController.js
 const Setting = require('../models/Setting');
-const { appendPriceToCsv } = require('../utils/csvUtils'); // <-- IMPORT
+const { appendPriceToCsv } = require('../utils/csvUtils');
+const { invalidateFeeCache } = require('../utils/feeUtils'); // <-- IMPORT THE NEW FUNCTION
 
 // A helper to get all settings at once
 const getSettings = async (req, res) => {
@@ -34,6 +35,10 @@ const updateSettings = async (req, res) => {
         });
 
         await Promise.all(updatePromises);
+        
+        // After successfully updating the settings in the DB, clear the cache.
+        invalidateFeeCache();
+        
         res.json({ message: 'Settings updated successfully.' });
     } catch (error) {
         console.error("Error updating settings:", error);
@@ -64,5 +69,5 @@ const addGoldPriceEntry = async (req, res) => {
 module.exports = {
     getSettings,
     updateSettings,
-    addGoldPriceEntry, // <-- EXPORT
+    addGoldPriceEntry,
 };

@@ -24,6 +24,7 @@ const AdminLayout = ({ children }) => {
   const navItems = [
     { href: '/admin/dashboard', icon: 'fa-tachometer-alt', label: 'Dashboard' },
     { href: '/admin/users', icon: 'fa-users', label: 'Users' },
+    { href: '/admin/inventory', icon: 'fa-warehouse', label: 'Inventory' }, // <-- ADD THIS
     { href: '/admin/redemptions', icon: 'fa-box-open', label: 'Redemptions' },
     { href: '/admin/gamification', icon: 'fa-trophy', label: 'Gamification' },
     { href: '/admin/promos', icon: 'fa-tags', label: 'Promo Codes' },

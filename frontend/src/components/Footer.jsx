@@ -15,6 +15,7 @@ export default function Footer() {
              <div className="footer-section logo-section">
                 <Image src={logoSrc} alt="GoldNest Logo Small" width={100} height={30} className="footer-logo"/>
                  <p><a href="mailto:support@goldnest.com">support@goldnest.com</a></p> {/* Use correct email */}
+                 <p><Link href="/gn-admin-portal">GoldNest (Admin)</Link></p>
             </div>
             <div className="footer-section">
                 <h4>Navigation</h4>

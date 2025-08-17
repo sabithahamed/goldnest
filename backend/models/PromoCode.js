@@ -18,6 +18,11 @@ const promoCodeSchema = new mongoose.Schema({
     enum: ['PERCENTAGE_DEPOSIT', 'FLAT_LKR_DEPOSIT'],
     required: true,
   },
+  promoType: {
+    type: String,
+    enum: ['DEPOSIT_BONUS', 'PURCHASE_BONUS'], // Defines what the code is for
+    required: true,
+  },
   bonusValue: {
     type: Number,
     required: true, // e.g., 0.10 for 10% or 500 for LKR 500

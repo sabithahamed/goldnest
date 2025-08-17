@@ -115,7 +115,10 @@ const getUserProfile = async (req, res) => {
 
              // Gamification State (from user document)
              earnedBadgeIds: user.earnedBadgeIds || [],
+             // --- THIS IS THE FIX ---
+             // Convert Map to a plain object before sending it as JSON
              challengeProgress: user.challengeProgress ? Object.fromEntries(user.challengeProgress) : {},
+             // --- END OF FIX ---
              completedChallengeIds: user.completedChallengeIds || [],
              starCount: user.starCount || 0,
 

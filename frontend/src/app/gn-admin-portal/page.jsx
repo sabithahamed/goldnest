@@ -5,19 +5,21 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Image from 'next/image';
+import Link from 'next/link';
+import styles from './AdminLogin.module.css'; // <-- IMPORT THE NEW CSS MODULE
 
 const AdminLoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('admin'); // 'admin' or 'delivery'
   const router = useRouter();
 
-  // Redirect if admin is already logged in
   useEffect(() => {
     const adminInfo = localStorage.getItem('adminInfo');
     if (adminInfo) {
-      router.push('/admin/dashboard'); // Redirect to the future dashboard
+      router.push('/admin/dashboard');
     }
   }, [router]);
 
@@ -36,11 +38,10 @@ const AdminLoginPage = () => {
         config
       );
 
-      // Store admin info and token in localStorage
       localStorage.setItem('adminInfo', JSON.stringify(data));
       
       setLoading(false);
-      router.push('/admin/dashboard'); // Redirect on successful login
+      router.push('/admin/dashboard');
 
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check credentials.');
@@ -49,54 +50,73 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="p-8 bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="text-center mb-6">
-          <Image src="/GoldNest.png" alt="GoldNest Logo" width={150} height={40} className="mx-auto" />
-          <h1 className="text-2xl font-bold text-gray-800 mt-4">Admin Portal</h1>
+    <div className={styles.pageWrapper}>
+      <div className={styles.loginContainer}>
+        <div className={styles.logoContainer}>
+          <Image src="/GoldNest.png" alt="GoldNest Logo" width={150} height={50} />
         </div>
 
-        {error && <p className="text-red-500 text-center mb-4 text-sm">{error}</p>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-              Admin Email
-            </label>
-            <input
-              className="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              id="email"
-              type="email"
-              placeholder="admin@goldnest.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-              Password
-            </label>
-            <input
-              className="shadow-sm appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:ring-2 focus:ring-yellow-500"
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <button
-              className="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline w-full disabled:bg-gray-400"
-              type="submit"
-              disabled={loading}
+        <div className={styles.roleSwitcher}>
+            <button 
+                onClick={() => setActiveTab('admin')}
+                className={`${styles.roleButton} ${activeTab === 'admin' ? styles.activeRole : styles.inactiveRole}`}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+                Admin
             </button>
-          </div>
-        </form>
+            <button 
+                onClick={() => setActiveTab('delivery')}
+                className={`${styles.roleButton} ${activeTab === 'delivery' ? styles.activeRole : styles.inactiveRole}`}
+            >
+                Delivery
+            </button>
+        </div>
+
+        {activeTab === 'admin' && (
+            <form onSubmit={handleSubmit} className={styles.loginForm}>
+                {error && <p className="text-red-500 text-center text-sm -mt-2 mb-2">{error}</p>}
+
+                <div className={styles.inputGroup}>
+                    <i className={`fas fa-user ${styles.inputIcon}`}></i>
+                    <input
+                      className={styles.inputField}
+                      id="email"
+                      type="email"
+                      placeholder="Username / Email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                </div>
+                <div className={styles.inputGroup}>
+                    <i className={`fas fa-lock ${styles.inputIcon}`}></i>
+                    <input
+                      className={styles.inputField}
+                      id="password"
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                </div>
+
+                <Link href="#" className={styles.forgotPassword}>Forgot Password?</Link>
+
+                <button
+                  className={styles.loginButton}
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? 'Signing In...' : 'Login'}
+                </button>
+            </form>
+        )}
+
+        {activeTab === 'delivery' && (
+            <div className={styles.comingSoon}>
+                <p>The Delivery Partner Portal is coming soon.</p>
+            </div>
+        )}
       </div>
     </div>
   );

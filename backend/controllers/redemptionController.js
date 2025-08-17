@@ -30,9 +30,9 @@ const requestRedemption = async (req, res) => {
         return res.status(400).json({ message: 'Incomplete shipping details are required.' });
     }
 
-    const deliveryFee = getRedemptionFee(); // Get fee from central config
-
     try {
+        const deliveryFee = await getRedemptionFee(); // Get fee from central config
+
         const user = await User.findById(userId);
         if (!user) return res.status(404).json({ message: 'User not found' });
 

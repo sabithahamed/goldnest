@@ -29,6 +29,8 @@ const adminRoutes = require('./routes/adminRoutes'); // <-- ADD THIS
 const adminSettingsRoutes = require('./routes/adminSettingsRoutes'); // <-- ADD
 const adminGamificationRoutes = require('./routes/adminGamificationRoutes'); // <-- ADD
 const adminPromoRoutes = require('./routes/adminPromoRoutes'); // <-- ADD
+const adminInventoryRoutes = require('./routes/adminInventoryRoutes'); // <-- ADD
+const promoRoutes = require('./routes/promoRoutes'); // <-- ADD
 
 // Connect to Database
 connectDB();
@@ -63,6 +65,8 @@ app.use('/api/admin', adminRoutes); // <-- ADD THIS
 app.use('/api/admin/settings', adminSettingsRoutes); // <-- ADD
 app.use('/api/admin/gamification', adminGamificationRoutes); // <-- ADD
 app.use('/api/admin/promos', adminPromoRoutes); // <-- ADD
+app.use('/api/admin/inventory', adminInventoryRoutes); // <-- ADD
+app.use('/api/promos', promoRoutes); // <-- ADD
 
 // Basic test route
 app.get('/', (req, res) => {

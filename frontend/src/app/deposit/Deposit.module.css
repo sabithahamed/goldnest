@@ -1,0 +1,156 @@
+/* src/app/deposit/Deposit.module.css */
+
+.pageWrapper {
+    background-color: #f8fafc; /* slate-50 */
+    padding: 2rem 1rem;
+    min-height: calc(100vh - 120px); /* Adjust based on nav/footer */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.card {
+    background-color: #ffffff;
+    padding: 2.5rem;
+    border-radius: 1rem; /* 16px */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    width: 100%;
+    max-width: 550px;
+    border: 1px solid #e2e8f0;
+}
+
+.header {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.formGroup {
+    margin-bottom: 1.5rem;
+}
+
+.formLabel {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #475569;
+    margin-bottom: 0.5rem;
+}
+
+.formInput, .formSelect {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem; /* 8px */
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+.formInput:focus, .formSelect:focus {
+    outline: none;
+    border-color: #F8B612;
+    box-shadow: 0 0 0 3px rgba(248, 182, 18, 0.2);
+}
+
+.promoContainer {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.promoInput {
+    flex-grow: 1;
+}
+
+.applyButton {
+    background-color: #e2e8f0;
+    color: #334155;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    padding: 0 1.25rem;
+    border: 1px solid #cbd5e1;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    white-space: nowrap;
+}
+.applyButton:hover {
+    background-color: #cbd5e1;
+}
+.applyButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.appliedButton {
+    background-color: #dcfce7; /* green-100 */
+    color: #166534; /* green-800 */
+    border-color: #86efac; /* green-300 */
+    cursor: default;
+}
+
+.promoMessage {
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+.promoError { color: #dc2626; }
+.promoSuccess { color: #16a34a; }
+
+.summary {
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1.5rem;
+    margin-top: 1.5rem;
+    font-size: 0.875rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+}
+.summaryLabel { color: #64748b; }
+.summaryValue { font-weight: 500; color: #334155; }
+.summaryBonus { color: #16a34a; font-weight: 600; }
+.summaryTotal {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #0f172a;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.actions {
+    margin-top: 2rem;
+    display: flex;
+    gap: 1rem;
+}
+.actions button, .actions a {
+    flex-grow: 1;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.primaryButton {
+    background-color: #F8B612;
+    color: #422006; /* Dark brown for text on gold */
+    border: none;
+}
+.primaryButton:hover {
+    background-color: #ca8a04;
+}
+
+.secondaryButton {
+    background-color: #ffffff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+.secondaryButton:hover {
+    border-color: #94a3b8;
+    background-color: #f8fafc;
+}
