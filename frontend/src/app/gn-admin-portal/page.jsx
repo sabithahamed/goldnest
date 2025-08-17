@@ -66,8 +66,8 @@ const AdminLoginPage = () => {
             boxShadow: '0 2px 6px rgba(0,0,0,0.05)'
         }}>
             <div style={{ fontWeight: 600, color: '#6b4005', marginBottom: '6px' }}>🔑 Demo Credentials</div>
-            <div><strong>Email:</strong> test@goldnest.lk</div>
-            <div><strong>Password:</strong> goldnest-test</div>
+            <div><strong>Email:</strong> admin@goldnest.lk</div>
+            <div><strong>Password:</strong> goldnest1234</div>
         </div>
         <div className={styles.roleSwitcher}>
             <button 
