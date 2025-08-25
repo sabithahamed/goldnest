@@ -69,7 +69,9 @@ const registerUser = async (req, res) => {
          });
 
     } catch (error) {
-        console.error("Registration Error:", error);
+        console.error("🔥🔥🔥 CRITICAL REGISTRATION ERROR 🔥🔥🔥");
+        console.error("The registration process failed. This is often due to an incorrect email service configuration in your .env file (EMAIL_USER, EMAIL_PASS).");
+        console.error("Full Error Details:", error);
         res.status(500).json({ message: 'Server Error during registration' });
     }
 };

@@ -8,6 +8,11 @@ const adminActionLogSchema = new mongoose.Schema({
   targetType: { type: String }, // e.g., 'User', 'Redemption', 'Setting'
   targetId: { type: String },
   details: { type: mongoose.Schema.Types.Mixed }, // Store extra info, like the new status
+  isUndoable: { type: Boolean, default: false },
+  isUndone: { type: Boolean, default: false },
+  undoData: { type: mongoose.Schema.Types.Mixed }, // Stores the 'before' state
+  undoneBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Admin' },
+  undoneAt: { type: Date }
 }, { timestamps: true });
 
 const AdminActionLog = mongoose.model('AdminActionLog', adminActionLogSchema);

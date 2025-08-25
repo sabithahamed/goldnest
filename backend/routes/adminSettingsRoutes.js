@@ -13,8 +13,7 @@ const { confirmPassword } = require('../middleware/adminAuthMiddleware'); // <--
 router.use(protectAdmin);
 
 router.get('/', getSettings);
-router.put('/', updateSettings);
+router.put('/', confirmPassword, updateSettings); // Apply middleware
 router.post('/gold-price', addGoldPriceEntry); // <-- ADD NEW ROUTE
-router.put('/', confirmPassword, updateSettings); // <-- ADD MIDDLEWARE
 
 module.exports = router;

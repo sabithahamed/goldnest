@@ -8,29 +8,40 @@ const ModalContext = createContext();
 export const useModal = () => useContext(ModalContext);
 
 export const ModalProvider = ({ children }) => {
-  // --- Existing Generic Modal State ---
+  // --- Generic Modal State ---
   const [isGenericModalOpen, setIsGenericModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: '', message: '', type: 'info' });
+  // --- NEW: State to hold the function to run when the modal is closed ---
+  const [onModalCloseAction, setOnModalCloseAction] = useState(null);
 
-  // --- NEW: Confirmation Modal State ---
+  // --- Confirmation Modal State ---
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmContent, setConfirmContent] = useState({
     title: '',
     message: '',
-    onConfirm: () => {}, // The function to run on confirmation
+    onConfirm: () => {},
   });
 
-  // --- Existing Generic Modal Functions ---
-  const openGenericModal = (title, message, type = 'info') => {
+  // --- UPDATED: Generic Modal Functions ---
+  const openGenericModal = (title, message, type = 'info', onCloseCallback = null) => {
     setModalContent({ title, message, type });
+    // Store the callback function so 'closeGenericModal' can use it.
+    // We wrap it in a function to ensure we're setting the state correctly.
+    setOnModalCloseAction(() => onCloseCallback); 
     setIsGenericModalOpen(true);
   };
+
   const closeGenericModal = () => {
     setIsGenericModalOpen(false);
-    // No need to reset here, it's reset on open
+    // --- NEW: After closing, check if there's a stored action to run ---
+    if (typeof onModalCloseAction === 'function') {
+      onModalCloseAction();
+    }
+    // Reset the callback to null for the next time
+    setOnModalCloseAction(null);
   };
 
-  // --- NEW: Confirmation Modal Functions ---
+  // --- Confirmation Modal Functions (unchanged) ---
   const openConfirmModal = useCallback((title, message, onConfirmAction) => {
     setConfirmContent({ title, message, onConfirm: onConfirmAction });
     setIsConfirmModalOpen(true);
@@ -38,19 +49,17 @@ export const ModalProvider = ({ children }) => {
 
   const closeConfirmModal = () => {
     setIsConfirmModalOpen(false);
-    // Resetting content after close is good practice
     setConfirmContent({ title: '', message: '', onConfirm: () => {} });
   };
 
   const handleConfirm = () => {
-    // Execute the stored callback function
     if (typeof confirmContent.onConfirm === 'function') {
       confirmContent.onConfirm();
     }
-    closeConfirmModal(); // Close modal after action is executed
+    closeConfirmModal();
   };
   
-  // Existing Login Modal State (if you still need it)
+  // Login Modal State (unchanged)
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const openLoginModal = () => setIsLoginModalOpen(true);
   const closeLoginModal = () => setIsLoginModalOpen(false);
@@ -64,11 +73,11 @@ export const ModalProvider = ({ children }) => {
         closeGenericModal,
         modalContent,
         
-        // NEW: Confirmation Modal
+        // Confirmation Modal
         isConfirmModalOpen,
         openConfirmModal,
         closeConfirmModal,
-        handleConfirm, // The action for the "Confirm" button
+        handleConfirm,
         confirmContent,
 
         // Login Modal

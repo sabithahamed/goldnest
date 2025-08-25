@@ -2,27 +2,24 @@
 const User = require('../models/User');
 const InventoryLog = require('../models/InventoryLog');
 const { mintToTreasury } = require('../services/blockchainService');
+const { logAdminAction } = require('../services/auditLogService'); // <-- ADD THIS IMPORT
 
 // @desc    Get all inventory statistics
 // @route   GET /api/admin/inventory/stats
 // @access  Private (Admin Only)
 const getInventoryStats = async (req, res) => {
     try {
-        // Concurrently fetch stats
         const [
             physicalGoldResult,
             tokenizedGoldResult,
             inventoryLogs
         ] = await Promise.all([
-            // 1. Calculate total physical gold added by admins
             InventoryLog.aggregate([
                 { $group: { _id: null, total: { $sum: '$gramsAdded' } } }
             ]),
-            // 2. Calculate total gold owned by all users (tokenized)
             User.aggregate([
                 { $group: { _id: null, total: { $sum: '$goldBalanceGrams' } } }
             ]),
-            // 3. Get the history of additions
             InventoryLog.find({}).sort({ createdAt: -1 }).limit(10)
         ]);
 
@@ -48,7 +45,7 @@ const getInventoryStats = async (req, res) => {
 const addPhysicalGold = async (req, res) => {
     const { gramsAdded, notes } = req.body;
     const adminId = req.admin._id;
-    const adminName = req.admin.name;
+    const adminName = `${req.admin.firstName} ${req.admin.lastName}`;
 
     if (!gramsAdded || isNaN(gramsAdded) || gramsAdded <= 0) {
         return res.status(400).json({ message: 'Please provide a valid number of grams to add.' });
@@ -64,17 +61,23 @@ const addPhysicalGold = async (req, res) => {
 
         await newLog.save();
 
-        // --- NEW: Mint corresponding tokens to the treasury ---
+        // --- NEW: Log this action for the audit trail and undo feature ---
+        // For an "add" action, the undoData specifies that the reverse action is to "delete" this new document.
+        await logAdminAction(
+            req.admin,
+            'Added physical gold to reserve',
+            { type: 'InventoryLog', id: newLog._id },
+            { gramsAdded: newLog.gramsAdded, notes: newLog.notes },
+            { action: 'delete', targetId: newLog._id.toString() }
+        );
+
         try {
             const txHash = await mintToTreasury(parseFloat(gramsAdded));
             console.log(`[Admin] Minted ${gramsAdded}g to treasury, tx: ${txHash}`);
         } catch (blockchainError) {
             console.error(`CRITICAL: DB updated with ${gramsAdded}g, but blockchain mint failed!`, blockchainError);
-            // In a real app, this would trigger an alert for manual reconciliation.
-            // For now, we proceed but log the critical error.
         }
-        // --- END NEW ---
-
+        
         res.status(201).json({ message: 'Physical gold added to reserve successfully.', log: newLog });
     } catch (error) {
         console.error('Error adding physical gold:', error);

@@ -63,16 +63,23 @@
     color: #b45309; /* Darker gold/amber text for active */
     font-weight: 600;
 }
+
 .navLinkActive i {
     color: #f59e0b; /* Bright gold for active icon */
 }
 
+/* --- UPDATED: Sidebar Footer styles --- */
 .sidebarFooter {
     padding: 1rem;
     border-top: 1px solid #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem; /* Adds spacing between the buttons */
 }
 
-.logoutButton {
+/* --- NEW: Common styles for footer buttons --- */
+.logoutButton,
+.refreshButton {
     display: flex;
     align-items: center;
     padding: 0.75rem 1rem;
@@ -84,8 +91,24 @@
     color: #475569;
     cursor: pointer;
     text-align: left;
+    font-weight: 500; /* Added for consistency */
 }
 
+/* --- NEW: Common styles for button icons --- */
+.logoutButton i,
+.refreshButton i {
+    width: 1.5rem;
+    text-align: center;
+    color: #94a3b8;
+}
+
+/* --- NEW: Specific styles for Refresh Button hover effect --- */
+.refreshButton:hover {
+    background-color: #e0f2fe; /* Light blue hover */
+    color: #0c4a6e; /* Dark blue text on hover */
+}
+
+/* --- UPDATED: Specific styles for Logout Button hover effect --- */
 .logoutButton:hover {
     background-color: #fee2e2; /* Light red hover */
     color: #b91c1c; /* Dark red text on hover */

@@ -1,12 +1,16 @@
 /* src/app/deposit/Deposit.module.css */
 
 .pageWrapper {
-    background-color: #f8fafc; /* slate-50 */
+    background-color: var(--background-secondary); /* Use theme variable */
     padding: 2rem 1rem;
-    min-height: calc(100vh - 120px); /* Adjust based on nav/footer */
+    
+    /* --- THIS IS THE FIX --- */
+    /* Remove the min-height property. The flex-grow on the main tag now handles this. */
+    /* min-height: calc(100vh - 120px); */ 
+    
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: flex-start; /* Align to top is usually better than center */
 }
 
 .card {

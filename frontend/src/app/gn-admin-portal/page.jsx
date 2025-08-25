@@ -23,7 +23,7 @@ const AdminLoginPage = () => {
     }
   }, [router]);
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -38,16 +38,20 @@ const AdminLoginPage = () => {
         config
       );
 
+      // --- ADD THIS LINE FOR THE FINAL TEST ---
+      console.log("🚀 BACKEND RESPONSE RECEIVED:", data); 
+      // ------------------------------------
+
       localStorage.setItem('adminInfo', JSON.stringify(data));
       
       setLoading(false);
-      router.push('/admin/dashboard');
+      window.location.href = '/admin/dashboard';
 
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed. Please check credentials.');
       setLoading(false);
     }
-  };
+};
 
   return (
     <div className={styles.pageWrapper}>
