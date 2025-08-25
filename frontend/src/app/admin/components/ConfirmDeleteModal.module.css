@@ -1,0 +1,101 @@
+/* src/app/admin/components/ConfirmDeleteModal.module.css */
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+    padding: 1rem;
+}
+
+.modalContent {
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 28rem;
+    padding: 2rem;
+    text-align: center;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.iconWrapper {
+    margin: 0 auto 1rem;
+    height: 3rem;
+    width: 3rem;
+    border-radius: 9999px;
+    background-color: #fee2e2; /* red-100 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.iconWrapper i {
+    font-size: 1.5rem;
+    color: #dc2626; /* red-600 */
+}
+
+.modalTitle {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: #1a202c;
+}
+
+.modalSubtitle {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.adminName {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.modalActions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.modalButtonCancel {
+    background-color: #e5e7eb;
+    color: #374151;
+    font-weight: 600;
+    padding: 0.625rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.modalButtonCancel:hover {
+    background-color: #d1d5db;
+}
+
+.modalButtonConfirmDelete {
+    background-color: #dc2626; /* red-600 */
+    color: white;
+    font-weight: 600;
+    padding: 0.625rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.modalButtonConfirmDelete:hover {
+    background-color: #b91c1c; /* red-700 */
+}
+.modalButtonConfirmDelete:disabled {
+    background-color: #fca5a5; /* red-300 */
+    cursor: not-allowed;
+}

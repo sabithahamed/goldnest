@@ -233,15 +233,15 @@ function GeneralSettingsComponent({ userData, setUserData, initialData, triggerF
                 <label htmlFor="languagePreference">Language</label>
                 <select id="languagePreference" value={userData.languagePreference || 'en-us'} onChange={handleChange} name="languagePreference" className={`${styles.inputField} bg-white`}>
                     <option value="en-us">English (United States)</option>
-                    <option value="si-lk">Sinhala (Sri Lanka)</option>
-                    <option value="ta-lk">Tamil (Sri Lanka)</option>
+                    <option value="si-lk" disabled>Sinhala (coming soon)</option>
+                    <option value="ta-lk" disabled>Tamil (coming soon)</option>
                 </select>
             </div>
             <div className={styles.formGroup}>
                 <label htmlFor="theme">Theme</label>
                 <select id="theme" value={userData?.themePreference || 'white'} onChange={(e) => handleThemeChange(e.target.value)} className={`${styles.inputField} bg-white`}>
-                    <option value="white">White</option>
-                    <option value="dark">Dark</option>
+                    <option value="white" defaultChecked>White</option>
+                    <option value="dark" disabled >Dark(coming soon)</option>
                 </select>
             </div>
             <div className={styles.actionButtons}>
