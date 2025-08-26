@@ -2,14 +2,13 @@
 const express = require('express');
 const router = express.Router();
 const { getChallenges, createChallenge, deleteChallenge } = require('../controllers/adminGamificationController'); // <-- IMPORT deleteChallenge
-const { protectAdmin } = require('../middleware/adminAuthMiddleware');
+const { protectAdmin, superAdminOnly, confirmPassword } = require('../middleware/adminAuthMiddleware');
 
 router.use(protectAdmin);
 
 router.get('/', getChallenges);
-router.post('/', createChallenge);
+router.post('/', confirmPassword,createChallenge);
 
-router.route('/:id')
-    .delete(deleteChallenge); // <-- ADD THIS NEW ROUTE
+router.delete('/:id', superAdminOnly, confirmPassword, deleteChallenge);// <-- ADD THIS NEW ROUTE
     
 module.exports = router;

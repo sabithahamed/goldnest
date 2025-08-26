@@ -81,5 +81,20 @@ const createWallet = () => {
         privateKey: newUserWallet.privateKey
     };
 };
+const burnFromTreasury = async (amountInGrams) => {
+    try {
+        const roundedAmount = parseFloat(amountInGrams.toFixed(8));
+        const amountInWei = ethers.parseUnits(roundedAmount.toString(), 18);
+        
+        // The treasuryWallet is the signer, so it can call burn on its own tokens
+        const tx = await gngContract.burn(amountInWei); 
+        await tx.wait(1);
+        console.log(`[Blockchain] Burned ${amountInGrams} GNG from Treasury. Hash: ${tx.hash}`);
+        return tx.hash;
+    } catch (error) {
+        console.error("[Blockchain] Error burning from treasury:", error);
+        throw new Error("Blockchain treasury token burning failed.");
+    }
+};
 
-module.exports = { mintToTreasury, transferToUser, transferFromUserToTreasury, createWallet };
+module.exports = { mintToTreasury, transferToUser, transferFromUserToTreasury, createWallet, burnFromTreasury };

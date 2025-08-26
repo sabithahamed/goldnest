@@ -18,7 +18,7 @@ const {
 } = require('../controllers/adminController');
 
 // --- IMPORT MIDDLEWARE ---
-const { protectAdmin, confirmPassword } = require('../middleware/adminAuthMiddleware');
+const { protectAdmin, superAdminOnly, confirmPassword } = require('../middleware/adminAuthMiddleware');
 
 
 // =================================================================================
@@ -37,10 +37,10 @@ router.use(protectAdmin);
 
 
 // --- Dashboard Routes ---
-router.get('/stats/dashboard', getDashboardStats);
-router.get('/stats/recent-transactions', getRecentTransactions);
-router.get('/stats/user-chart', getUserSignupChartData);
-router.get('/stats/transaction-types', getTransactionTypeChartData);
+router.get('/stats/dashboard', superAdminOnly, getDashboardStats);
+router.get('/stats/recent-transactions', superAdminOnly, getRecentTransactions);
+router.get('/stats/user-chart', superAdminOnly, getUserSignupChartData);
+router.get('/stats/transaction-types', superAdminOnly, getTransactionTypeChartData);
 
 
 // --- User Management Routes ---

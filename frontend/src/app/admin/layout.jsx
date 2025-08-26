@@ -87,7 +87,6 @@ const AdminLayout = ({ children }) => {
     }, []);
 
     const navItems = [
-        { href: '/admin/dashboard', icon: 'fa-tachometer-alt', label: 'Dashboard' },
         { href: '/admin/users', icon: 'fa-users', label: 'Users' },
         { href: '/admin/inventory', icon: 'fa-warehouse', label: 'Inventory' },
         { href: '/admin/redemptions', icon: 'fa-box-open', label: 'Redemptions' },
@@ -123,6 +122,17 @@ const AdminLayout = ({ children }) => {
                 <div className={styles.sidebarHeader}>GoldNest Admin</div>
                 <nav className={styles.sidebarNav}>
                     <ul>
+                        {adminRole === 'superadmin' && (
+                            <li>
+                                <Link
+                                    href="/admin/dashboard"
+                                    className={classNames(styles.navLink, pathname === '/admin/dashboard' && styles.navLinkActive)}
+                                >
+                                    <i className="fas fa-tachometer-alt"></i>
+                                    <span>Dashboard</span>
+                                </Link>
+                            </li>
+                        )}
                         {navItems.map(item => (
                             <li key={item.href}>
                                 <Link

@@ -26,13 +26,16 @@ router.use(superAdminOnly);
 // --- Routes for creating/viewing admin accounts ---
 router.route('/accounts')
     .get(getAdmins)
-    .post(createAdmin);
+    .post(createAdmin); // Creating an admin is also sensitive
 
-// --- UPDATED Routes for the filterable history/audit page ---
-router.delete('/accounts/:id', confirmPassword,deleteAdmin);
-router.put('/accounts/:id/role',confirmPassword, updateAdminRole);
+// --- Apply confirmPassword middleware to sensitive actions ---
+router.delete('/accounts/:id', confirmPassword, deleteAdmin);
+router.put('/accounts/:id/role', confirmPassword, updateAdminRole);
+// ---
+
 router.get('/find-admin', findAdminByNicOrEmail);
 router.get('/sessions', getAdminSessionHistory); // <-- This route provides login/logout data
 router.get('/actions', getAdminActionLogs);     // <-- This route provides admin action data
-router.post('/actions/:id/undo', undoAdminAction);
+router.post('/actions/:id/undo', confirmPassword, undoAdminAction); // Undoing an action is sensitive
+
 module.exports = router;

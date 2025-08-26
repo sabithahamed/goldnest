@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import styles from './Management.module.css';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal';
 import SuccessModal from '../components/SuccessModal';
+import PasswordConfirmModal from '../components/PasswordConfirmModal';
 
 const formatDate = (dateString) => new Date(dateString).toLocaleString('en-GB');
 
@@ -35,6 +36,9 @@ const AdminManagementPage = () => {
     // Modal states
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [isConfirmingAction, setIsConfirmingAction] = useState(false);
+    const [actionToConfirm, setActionToConfirm] = useState(null);
 
     const fetchData = useCallback(async (token) => {
         setLoading(true);
@@ -131,26 +135,54 @@ const AdminManagementPage = () => {
         setAdminToDelete(admin);
         setIsDeleteModalOpen(true);
     };
-
-    const executeDeleteAdmin = async () => {
+    const initiateDeleteAdmin = () => {
         if (!adminToDelete) return;
-        setDeletingId(adminToDelete._id);
-        setError(''); setSuccess('');
+        
+        // Close the first confirmation modal
+        setIsDeleteModalOpen(false); 
+
+        // Check the role
+        if (adminInfo?.role === 'superadmin') {
+            // Superadmins can proceed directly
+            executeDeleteAdmin("SUPERADMIN_BYPASS");
+        } else {
+            // Other admins must confirm with a password
+            setActionToConfirm(() => (password) => executeDeleteAdmin(password));
+            setIsPasswordModalOpen(true);
+        }
+    };
+    const executeDeleteAdmin = async (password) => {
+        if (!adminToDelete) return;
+        
+        // This state is for the final API call spinner
+        setIsConfirmingAction(true); 
+        setError(''); 
+        setSuccess('');
+
         try {
-            const config = { headers: { Authorization: `Bearer ${adminInfo.token}` } };
+            const config = { 
+                headers: { Authorization: `Bearer ${adminInfo.token}` },
+                // Add the confirmation password to the request body
+                data: { confirmationPassword: password } 
+            };
             const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
+            
+            // Note: For DELETE requests with a body, axios requires this structure
             await axios.delete(`${backendUrl}/api/admin/management/accounts/${adminToDelete._id}`, config);
+
             setAdmins(prevAdmins => prevAdmins.filter(admin => admin._id !== adminToDelete._id));
             setSuccess('Admin account deleted successfully.');
             setIsSuccessModalOpen(true);
             setFoundAdmin(null);
             setDeleteQuery('');
+
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to delete admin account.');
         } finally {
-            setDeletingId(null);
-            setIsDeleteModalOpen(false);
+            setIsConfirmingAction(false);
+            setIsPasswordModalOpen(false); // Close the password modal
             setAdminToDelete(null);
+            setActionToConfirm(null);
         }
     };
 
@@ -288,7 +320,19 @@ const AdminManagementPage = () => {
             </div>
             
             {isSuccessModalOpen && (<SuccessModal title="Success!" message={success} onClose={() => setIsSuccessModalOpen(false)} />)}
-            {isDeleteModalOpen && (<ConfirmDeleteModal adminToDelete={adminToDelete} isDeleting={deletingId === adminToDelete?._id} onCancel={() => setIsDeleteModalOpen(false)} onConfirm={executeDeleteAdmin} />)}
+            {isDeleteModalOpen && (<ConfirmDeleteModal 
+                    adminToDelete={adminToDelete} 
+                    isDeleting={isConfirmingAction} 
+                    onCancel={() => setIsDeleteModalOpen(false)} 
+                    onConfirm={initiateDeleteAdmin} // <-- Use the new initiator function here
+                />
+            )}
+            {isPasswordModalOpen && (<PasswordConfirmModal
+                    onCancel={() => setIsPasswordModalOpen(false)}
+                    onConfirm={actionToConfirm} // The execute function is stored here
+                    isConfirming={isConfirmingAction}
+                />
+            )}
         </>
     );
 };

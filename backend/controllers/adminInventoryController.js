@@ -84,8 +84,51 @@ const addPhysicalGold = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+const reducePhysicalGold = async (req, res) => {
+    const { gramsToReduce, notes } = req.body;
+    const adminId = req.admin._id;
+    const adminName = `${req.admin.firstName} ${req.admin.lastName}`;
+
+    if (!gramsToReduce || isNaN(gramsToReduce) || gramsToReduce <= 0) {
+        return res.status(400).json({ message: 'Please provide a valid number of grams to reduce.' });
+    }
+
+    try {
+        // Create a log entry with a negative value for the reduction
+        const newLog = new InventoryLog({
+            gramsAdded: -parseFloat(gramsToReduce), // Store as a negative number
+            notes: `REDUCTION: ${notes || 'No reason specified.'}`,
+            adminId,
+            adminName,
+        });
+
+        await newLog.save();
+        
+        await logAdminAction(
+            req.admin,
+            'Reduced physical gold from reserve',
+            { type: 'InventoryLog', id: newLog._id },
+            { gramsReduced: parseFloat(gramsToReduce), notes: newLog.notes }
+        );
+
+        // Burn the corresponding amount of tokens from the treasury
+        try {
+            const txHash = await burnFromTreasury(parseFloat(gramsToReduce));
+            console.log(`[Admin] Burned ${gramsToReduce}g from treasury, tx: ${txHash}`);
+        } catch (blockchainError) {
+            console.error(`CRITICAL: DB updated with reduction of ${gramsToReduce}g, but blockchain burn failed!`, blockchainError);
+            // This is a critical state that requires manual intervention.
+        }
+        
+        res.status(201).json({ message: 'Physical gold reduced from reserve successfully.', log: newLog });
+    } catch (error) {
+        console.error('Error reducing physical gold:', error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
 
 module.exports = {
     getInventoryStats,
     addPhysicalGold,
+    reducePhysicalGold
 };
