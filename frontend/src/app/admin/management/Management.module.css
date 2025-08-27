@@ -1,5 +1,4 @@
 /* src/app/admin/management/Management.module.css */
-
 .pageWrapper {
     display: flex;
     flex-direction: column;
@@ -36,7 +35,7 @@
 }
 @media (min-width: 1024px) {
     .createForm {
-        grid-template-columns: 2fr 2fr 1.5fr 1fr auto; /* 5 columns for inputs + button */
+        grid-template-columns: 1fr 1fr 1.5fr 1fr 1fr auto; /* 6 columns */
     }
 }
 
@@ -86,6 +85,7 @@
     display: flex;
     flex-direction: column;
 }
+
 .listItem {
     display: flex;
     justify-content: space-between;
@@ -110,3 +110,97 @@
 }
 .listItem .logAction { font-weight: 500; }
 .listItem .logDate { font-size: 0.75rem; color: #6b7280; }
+
+.deleteForm {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+.deleteForm input {
+    flex-grow: 1;
+}
+
+.findButton {
+    background-color: #4b5563; /* gray-600 */
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    border: none;
+    cursor: pointer;
+    height: 38px;
+    transition: background-color 0.2s;
+}
+.findButton:hover { background-color: #374151; }
+.findButton:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.findErrorText {
+    margin-top: 1rem;
+    color: #b91c1c; /* red-700 */
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+.foundAdminCard {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    background-color: #f9fafb; /* gray-50 */
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+}
+.adminDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+}
+.adminDetails p strong {
+    color: #4b5563;
+    display: inline-block;
+    width: 60px;
+}
+
+.finalDeleteButton {
+    background-color: #dc2626; /* red-600 */
+    color: #ffffff;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.2s;
+}
+.finalDeleteButton:hover {
+    background-color: #b91c1c; /* red-700 */
+}
+.finalDeleteButton:disabled {
+    background-color: #fca5a5; /* red-300 */
+    cursor: not-allowed;
+}
+
+/* --- THIS IS THE FIX: ADDED MISSING STYLES --- */
+.actionsContainer {
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* Space between badge and button */
+}
+
+.deleteButton {
+    background: none;
+    border: none;
+    color: #9ca3af; /* gray-400 */
+    cursor: pointer;
+    padding: 0.25rem;
+    transition: color 0.2s ease-in-out;
+}
+
+.deleteButton:hover {
+    color: #ef4444; /* red-500 */
+}
+
+.deleteButton:disabled {
+    color: #d1d5db; /* gray-300 */
+    cursor: not-allowed;
+}
