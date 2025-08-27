@@ -1,19 +1,17 @@
 // backend/controllers/adminSettingsController.js
-const Setting = require('../models/Setting');
+const Setting = require('../models/Setting'); // <-- The single, correct import
 const { appendPriceToCsv } = require('../utils/csvUtils');
 const { invalidateFeeCache } = require('../utils/feeUtils');
-const { logAdminAction } = require('../services/auditLogService'); // <-- ADD THIS IMPORT
+const { logAdminAction } = require('../services/auditLogService');
 
 // A helper to get all settings at once
 const getSettings = async (req, res) => {
     try {
         const settings = await Setting.find({});
-        // Convert array of settings to a key-value object for easier frontend use
         const settingsObject = settings.reduce((acc, setting) => {
             acc[setting.key] = setting.value;
             return acc;
         }, {});
-        
         res.json({ settings: settingsObject });
     } catch (error) {
         console.error("Error fetching settings:", error);
@@ -21,12 +19,22 @@ const getSettings = async (req, res) => {
     }
 };
 
-// A helper to update multiple settings at once
+// --- UPDATED to include UNDO logging ---
 const updateSettings = async (req, res) => {
-    const settingsToUpdate = req.body;
+    // We remove confirmationPassword from the object so it's not saved as a setting
+    const { confirmationPassword, ...settingsToUpdate } = req.body;
+
     try {
+        // Fetch the old settings values BEFORE updating, for the undo log
+        const keysToUpdate = Object.keys(settingsToUpdate);
+        const oldSettings = await Setting.find({ key: { $in: keysToUpdate } });
+        const undoData = oldSettings.reduce((acc, setting) => {
+            acc[setting.key] = setting.value;
+            return acc;
+        }, {});
+
+        // Perform the updates
         const updatePromises = Object.entries(settingsToUpdate).map(([key, value]) => {
-            // Ensure numeric values are stored as numbers
             const parsedValue = !isNaN(parseFloat(value)) ? parseFloat(value) : value;
             return Setting.findOneAndUpdate(
                 { key },
@@ -34,25 +42,27 @@ const updateSettings = async (req, res) => {
                 { upsert: true, new: true }
             );
         });
-
         await Promise.all(updatePromises);
         
-        // Log the admin action
-        await logAdminAction(req.admin, 'Updated platform settings', { type: 'Setting' }, { updatedKeys: Object.keys(settingsToUpdate) });
+        // Log the admin action, now including the old values in undoData
+        await logAdminAction(
+            req.admin, 
+            'Updated platform settings', 
+            { type: 'Setting' }, 
+            { updatedKeys: keysToUpdate },
+            undoData // <-- Pass the old values for the undo feature
+        );
         
-        // After successfully updating the settings in the DB, clear the cache.
         invalidateFeeCache();
-        
         res.json({ message: 'Settings updated successfully.' });
+
     } catch (error) {
         console.error("Error updating settings:", error);
         res.status(500).json({ message: "Error updating settings." });
     }
 };
 
-// @desc    Add a new gold price entry to the CSV
-// @route   POST /api/admin/settings/gold-price
-// @access  Private (Admin Only)
+// --- UPDATED to include audit logging ---
 const addGoldPriceEntry = async (req, res) => {
     const { date, price } = req.body;
 
@@ -62,7 +72,15 @@ const addGoldPriceEntry = async (req, res) => {
 
     try {
         await appendPriceToCsv(date, parseFloat(price));
-        // We don't save this to the 'Setting' model anymore, as it's a historical entry.
+
+        // Log this action
+        await logAdminAction(
+            req.admin,
+            'Added gold price entry',
+            { type: 'CSV' },
+            { date, price }
+        );
+
         res.status(201).json({ message: `Successfully added price for ${date}.` });
     } catch (error) {
         console.error("Error adding price to CSV:", error);

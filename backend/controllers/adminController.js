@@ -1,9 +1,20 @@
 // backend/controllers/adminController.js
+
+// --- REQUIRED IMPORTS FOR LOGIN ---
+const Admin = require('../models/Admin'); // Make sure this path is correct
+const generateToken = require('../utils/generateToken'); // Make sure this path is correct
+
+// --- EXISTING IMPORTS ---
 const User = require('../models/User');
 const Redemption = require('../models/Redemption');
-const mongoose = require('mongoose'); // Keep mongoose if it's used elsewhere or for consistency, though not strictly needed by the new function directly.
+const mongoose = require('mongoose');
 const { createNotification } = require('../services/notificationService');
-const { logAdminAction } = require('../services/auditLogService'); // <-- ADD THIS IMPORT
+const { logAdminAction } = require('../services/auditLogService');
+
+
+// =================================================================================
+// EXISTING CONTROLLERS (No changes needed below)
+// =================================================================================
 
 // @desc    Get dashboard statistics
 // @route   GET /api/admin/stats/dashboard
@@ -13,7 +24,6 @@ const getDashboardStats = async (req, res) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Concurrently fetch all statistics for efficiency
         const [
             totalUsers,
             newUsersToday,
@@ -25,18 +35,8 @@ const getDashboardStats = async (req, res) => {
             Redemption.countDocuments({ status: 'pending' }),
             User.aggregate([
                 { $unwind: '$transactions' },
-                {
-                    $match: {
-                        'transactions.type': 'investment',
-                        'transactions.amountLKR': { $ne: null } // Ensure amountLKR is not null
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        total: { $sum: '$transactions.amountLKR' }
-                    }
-                }
+                { $match: { 'transactions.type': 'investment', 'transactions.amountLKR': { $ne: null } } },
+                { $group: { _id: null, total: { $sum: '$transactions.amountLKR' } } }
             ])
         ]);
 
@@ -46,9 +46,7 @@ const getDashboardStats = async (req, res) => {
             pendingRedemptions,
             totalVolume: totalTransactionVolume.length > 0 ? totalTransactionVolume[0].total : 0,
         };
-
         res.json(stats);
-
     } catch (error) {
         console.error('Error fetching dashboard stats:', error);
         res.status(500).json({ message: 'Server Error' });
@@ -64,33 +62,22 @@ const getAllUsers = async (req, res) => {
     const searchQuery = req.query.search || '';
 
     try {
-        // Build search query
         let query = {};
         if (searchQuery) {
-            const searchRegex = new RegExp(searchQuery, 'i'); // 'i' for case-insensitive
-            query = {
-                $or: [
-                    { name: searchRegex },
-                    { email: searchRegex }
-                ]
-            };
+            const searchRegex = new RegExp(searchQuery, 'i');
+            query = { $or: [{ name: searchRegex }, { email: searchRegex }] };
         }
 
         const users = await User.find(query)
-            .sort({ createdAt: -1 }) // Show newest users first
+            .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
-            .select('-password -resetPasswordToken -emailVerificationToken'); // Exclude sensitive info
+            .select('-password -resetPasswordToken -emailVerificationToken');
 
         const totalUsers = await User.countDocuments(query);
         const totalPages = Math.ceil(totalUsers / limit);
 
-        res.json({
-            users,
-            currentPage: page,
-            totalPages,
-            totalUsers
-        });
+        res.json({ users, currentPage: page, totalPages, totalUsers });
     } catch (error) {
         console.error('Error fetching all users:', error);
         res.status(500).json({ message: 'Server Error' });
@@ -103,10 +90,9 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
     try {
         const user = await User.findById(req.params.id)
-            .select('-password -resetPasswordToken -emailVerificationToken'); // Exclude sensitive info
+            .select('-password -resetPasswordToken -emailVerificationToken');
 
         if (user) {
-            // Sort transactions newest first for display
             user.transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
             res.json(user);
         } else {
@@ -120,19 +106,17 @@ const getUserById = async (req, res) => {
 
 // @desc    Update user status (e.g., lock/unlock account)
 // @route   PUT /api/admin/users/:id/status
-// @access  Private (Admin Only - maybe SuperAdmin later)
+// @access  Private (Admin Only)
 const updateUserStatus = async (req, res) => {
     const { isLocked } = req.body;
     const { id } = req.params;
 
-    // Basic validation
     if (typeof isLocked !== 'boolean') {
         return res.status(400).json({ message: 'Invalid "isLocked" value. Must be true or false.' });
     }
 
     try {
         const user = await User.findById(id);
-
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -140,14 +124,9 @@ const updateUserStatus = async (req, res) => {
         user.isLocked = isLocked;
         const updatedUser = await user.save();
         
-        // Log the admin action
         await logAdminAction(req.admin, `Set user lock status to ${isLocked}`, { type: 'User', id: user._id });
 
-        res.json({
-            _id: updatedUser._id,
-            name: updatedUser.name,
-            isLocked: updatedUser.isLocked
-        });
+        res.json({ _id: updatedUser._id, name: updatedUser.name, isLocked: updatedUser.isLocked });
     } catch (error) {
         console.error(`Error updating status for user ${id}:`, error);
         res.status(500).json({ message: 'Server Error' });
@@ -169,20 +148,15 @@ const getAllRedemptions = async (req, res) => {
         }
 
         const redemptions = await Redemption.find(query)
-            .populate('user', 'name email') // Populate user's name and email
-            .sort({ createdAt: -1 }) // Show newest requests first
+            .populate('user', 'name email')
+            .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit);
 
         const totalRedemptions = await Redemption.countDocuments(query);
         const totalPages = Math.ceil(totalRedemptions / limit);
 
-        res.json({
-            redemptions,
-            currentPage: page,
-            totalPages,
-            totalRedemptions
-        });
+        res.json({ redemptions, currentPage: page, totalPages, totalRedemptions });
     } catch (error) {
         console.error('Error fetching all redemptions:', error);
         res.status(500).json({ message: 'Server Error' });
@@ -202,41 +176,27 @@ const updateRedemptionStatus = async (req, res) => {
             return res.status(404).json({ message: 'Redemption request not found' });
         }
 
-        const originalStatus = redemption.status; // Keep track of the old status
-
-        // 1. Update the main Redemption document
+        const originalStatus = redemption.status;
         if (status) redemption.status = status;
         if (trackingNumber) redemption.trackingNumber = trackingNumber;
         const updatedRedemption = await redemption.save();
         
-        // Log the admin action
         await logAdminAction(req.admin, `Updated redemption status to '${status}'`, { type: 'Redemption', id: redemption._id }, { trackingNumber });
         
-        // 2. --- NEW LOGIC: Update the corresponding transaction in the User document ---
         if (status && status !== originalStatus) {
             const user = await User.findById(redemption.user);
             if (user) {
-                // Find the specific transaction that is linked to this redemption
                 const transactionToUpdate = user.transactions.find(
                     tx => tx.relatedRedemptionId && tx.relatedRedemptionId.toString() === redemptionId
                 );
-
                 if (transactionToUpdate) {
                     transactionToUpdate.status = status;
-                    // Also update tracking number in the transaction if it exists
-                    if (trackingNumber) {
-                        transactionToUpdate.trackingNumber = trackingNumber;
-                    }
+                    if (trackingNumber) transactionToUpdate.trackingNumber = trackingNumber;
                     await user.save();
-                    console.log(`[Admin] Synced status to '${status}' for transaction ${transactionToUpdate._id} for user ${user._id}`);
-                } else {
-                     console.warn(`[Admin] Could not find matching transaction for redemption ${redemptionId} to sync status.`);
                 }
             }
         }
-        // --- END OF NEW LOGIC ---
 
-        // 3. Send a notification to the user about the update
         if (status && status !== originalStatus) {
             if (status === 'shipped') {
                  await createNotification(redemption.user, 'redemption_shipped', {
@@ -251,7 +211,6 @@ const updateRedemptionStatus = async (req, res) => {
                     link: `/wallet`
                 });
             }
-            // You can add notifications for 'processing' or 'cancelled' here too if you want.
         }
         
         res.json(updatedRedemption);
@@ -270,25 +229,9 @@ const getRecentTransactions = async (req, res) => {
             { $unwind: '$transactions' },
             { $sort: { 'transactions.date': -1 } },
             { $limit: 5 },
-            {
-                $lookup: { // Join with users collection to get user's name
-                    from: 'users',
-                    localField: '_id',
-                    foreignField: '_id',
-                    as: 'userInfo'
-                }
-            },
+            { $lookup: { from: 'users', localField: '_id', foreignField: '_id', as: 'userInfo' } },
             { $unwind: '$userInfo' },
-            {
-                $project: { // Shape the final output
-                    _id: '$transactions._id',
-                    userName: '$userInfo.name',
-                    type: '$transactions.type',
-                    amountLKR: '$transactions.amountLKR',
-                    amountGrams: '$transactions.amountGrams',
-                    date: '$transactions.date',
-                }
-            }
+            { $project: { _id: '$transactions._id', userName: '$userInfo.name', type: '$transactions.type', amountLKR: '$transactions.amountLKR', amountGrams: '$transactions.amountGrams', date: '$transactions.date' } }
         ]);
         res.json(recentTransactions);
     } catch (error) {
@@ -307,13 +250,8 @@ const getUserSignupChartData = async (req, res) => {
 
         const data = await User.aggregate([
             { $match: { createdAt: { $gte: thirtyDaysAgo } } },
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                    count: { $sum: 1 }
-                }
-            },
-            { $sort: { _id: 1 } } // Sort by date ascending
+            { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, count: { $sum: 1 } } },
+            { $sort: { _id: 1 } }
         ]);
         res.json(data);
     } catch (error) {
@@ -329,19 +267,8 @@ const getTransactionTypeChartData = async (req, res) => {
     try {
         const data = await User.aggregate([
             { $unwind: '$transactions' },
-            {
-                $group: {
-                    _id: '$transactions.type', // Group by the transaction type
-                    count: { $sum: 1 }        // Count how many of each type
-                }
-            },
-            {
-                $project: { // Reshape the output for easier use on the frontend
-                    type: '$_id',
-                    count: '$count',
-                    _id: 0
-                }
-            }
+            { $group: { _id: '$transactions.type', count: { $sum: 1 } } },
+            { $project: { type: '$_id', count: '$count', _id: 0 } }
         ]);
         res.json(data);
     } catch (error) {
@@ -350,6 +277,8 @@ const getTransactionTypeChartData = async (req, res) => {
     }
 };
 
+
+// --- EXPORT ALL CONTROLLERS ---
 module.exports = {
     getDashboardStats,
     getAllUsers,

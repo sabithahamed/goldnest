@@ -44,9 +44,25 @@ const AdminDashboardPage = () => {
   const barChartRef = useRef(null);
   const barChartInstanceRef = useRef(null);
 
+  // This useEffect correctly enforces superadmin-only access.
   useEffect(() => {
     const adminInfo = JSON.parse(localStorage.getItem('adminInfo'));
-    if (adminInfo) setAdminName(adminInfo.name);
+    
+    // 1. Check if logged in at all
+    if (!adminInfo) {
+        router.push('/gn-admin-portal');
+        return; // Stop execution
+    }
+
+    // 2. Check if the role is 'superadmin'
+    if (adminInfo.role !== 'superadmin') {
+        // Redirect non-superadmins to a safe default page
+        router.push('/admin/users'); 
+        return; // Stop execution
+    }
+    
+    // 3. If checks pass, proceed with loading dashboard data
+    setAdminName(adminInfo.name);
 
     const fetchData = async () => {
       try {
@@ -68,7 +84,8 @@ const AdminDashboardPage = () => {
 
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to fetch dashboard data.');
-        if (err.response?.status === 401) {
+        // The backend middleware will return 403 (Forbidden) if a non-superadmin tries to access
+        if (err.response?.status === 401 || err.response?.status === 403) {
             localStorage.removeItem('adminInfo');
             router.push('/gn-admin-portal');
         }
@@ -109,8 +126,11 @@ const AdminDashboardPage = () => {
   }, [userChartData]);
 
   if (loading) return <div>Loading Dashboard...</div>;
-  if (error) return <div className="text-red-500">Error: {error}</div>;
+  if (error) return <div className="text-red-500 p-4">Error: {error}</div>;
   
+  // This content will only be rendered if the user is a superadmin and data has loaded
+  if (!stats) return <div>Loading statistics...</div>;
+
   const formattedVolume = new Intl.NumberFormat('en-LK', { style: 'currency', currency: 'LKR', notation: 'compact', maximumFractionDigits: 2 }).format(stats.totalVolume);
 
   return (

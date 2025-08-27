@@ -148,3 +148,4 @@
 .historyTable th { text-align: left; padding: 0.75rem; background-color: #f9fafb; font-weight: 500; color: #6b7280; }
 .historyTable td { padding: 0.75rem; border-bottom: 1px solid #e5e7eb; }
 .gramsAddedCell { font-weight: 500; color: #16a34a; }
+.gramsReducedCell {font-weight: 500;color: #dc2626; /* Red */}
