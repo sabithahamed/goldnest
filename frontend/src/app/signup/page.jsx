@@ -62,6 +62,7 @@ export default function SignupPage() {
       router.push(`/verify-email?userId=${data.userId}&email=${encodeURIComponent(email)}`);
 
     } catch (err) {
+      setLoading(false);
       setError(err.response?.data?.message || 'Signup failed. Please try again.');
     }
   };
