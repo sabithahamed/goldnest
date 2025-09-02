@@ -66,7 +66,7 @@ export default function MarketInternalPage() {
         // Set up interval for periodic fetching
         const intervalId = setInterval(() => {
             fetchData();
-        }, 30000); // 30 seconds
+        }, 3600000); // 1 hour
 
         // Cleanup on unmount
         return () => clearInterval(intervalId);
@@ -252,3 +252,4 @@ export default function MarketInternalPage() {
     );
 
 }
+
