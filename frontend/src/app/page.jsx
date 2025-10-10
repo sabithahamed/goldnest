@@ -39,10 +39,7 @@ export default function HomePage() {
         // Check if the screen width is less than 771 pixels
     if (window.innerWidth < 771) {
             // Find the button by its ID
-        const buttonToClick = document.getElementById('autoClickButton');
-            // If the button exists, click it
-        if (buttonToClick) {
-            buttonToClick.click();
+        handleSubmit();
         }
     }
 
