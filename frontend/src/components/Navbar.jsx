@@ -24,6 +24,10 @@ export default function Navbar() {
             setIsLoggedIn(true);
         } else {
             setIsLoggedIn(false);
+            if (window.innerWidth < 771) {
+                // Call the function directly. No need to find a button.
+                openLoginModal();
+            }
         }
     }, []); // The empty dependency array [] means this runs only once on mount
 
