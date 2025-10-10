@@ -177,7 +177,6 @@ ul {
 .why-choose-grid {
     display: flex;
     justify-content: center; /* Center the items */
-    align-items: stretch; /* Ensure cards stretch to the same height */
     flex-wrap: nowrap; /* Keep items in a single line */
     gap: 30px; /* Adjusted gap for better spacing */
     overflow-x: auto; /* Allow horizontal scrolling on smaller screens */
@@ -554,7 +553,8 @@ ul {
     /* Index Page Adjustments */
     .hero-content h1 { font-size: 1.8rem; }
     .hero-content p { font-size: 0.95rem; }
-    .hero-image-slides img { height: 120px; padding: 0 5px; }
+    .hero-image-slides { width: 300%; } /* Slightly slower on tablets */
+    .hero-image-slides img { padding: 0 5px; width: auto; }
     .hero-image-slider-container { margin-bottom: 30px; }
     /* Optional: Slow down animation slightly on mobile */
     /* .hero-image-slides { animation-duration: 25s; } */
