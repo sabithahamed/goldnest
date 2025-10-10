@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
@@ -35,6 +35,16 @@ export default function HomePage() {
     const handleFaqClick = (index) => {
         setActiveIndex(activeIndex === index ? null : index);
     };
+    useEffect(() => {
+        // Check if the screen width is less than 771 pixels
+    if (window.innerWidth < 771) {
+            // Find the button by its ID
+        const buttonToClick = document.getElementById('autoClickButton');
+            // If the button exists, click it
+        if (buttonToClick) {
+            buttonToClick.click();
+        }
+    }
 
     return (
         <>
